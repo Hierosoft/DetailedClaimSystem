@@ -1,5 +1,5 @@
 # DetailedClaimSystem
-DetailedClaimSystem is a Minecraft server (bukkit) plugin allowing you to protect your constructions, it works with chunks and smaller zones defined by the same owner. The claims are fully configurable (settings, members, bans, name, description, chunks, sales..). Several settings can be configured at the zone level.
+DetailedClaimSystem is a Minecraft server (bukkit) plugin allowing you to protect your builds. One or more chunks become a claim, and smaller zones can be defined by the same owner as the claim. The claims are fully configurable (settings, members, bans, name, description, chunks, sales..). Several of these settings can be configured at the zone level.
 
 This is a fork of SimpleClaimSystem. The reason for the fork is to add zones, so please use the default "zones" branch to utilize the fork. "main" is only left here to try to integrate patches from the upstream SimpleClaimSystem. For further information about why it was not integrated with SimpleClaimSystem see:
 - https://github.com/Xyness/SimpleClaimSystem/pull/54
