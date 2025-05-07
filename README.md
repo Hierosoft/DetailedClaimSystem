@@ -3,6 +3,7 @@ DetailedClaimSystem is a Minecraft server (bukkit) plugin allowing you to protec
 
 This is a fork of SimpleClaimSystem. The reason for the fork is to add zones, so please use the default "zones" branch to utilize the fork. "main" is only left here to try to integrate patches from the upstream SimpleClaimSystem. For further information about why it was not integrated with SimpleClaimSystem see:
 - https://github.com/Xyness/SimpleClaimSystem/pull/54
+- For details on what is different, see https://github.com/Hierosoft/DetailedClaimSystem/issues/1
 
 ## Compatibility
 |                      Software                       |    Version    |
