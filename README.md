@@ -26,9 +26,5 @@ This is a fork of SimpleClaimSystem. The reason for the fork is to add zones, so
 
 
 ## Useful links
-### - Wiki ([here](https://xyness.gitbook.io/simpleclaimsystem))
-### - Discord ([here](https://discord.gg/xyness))
-
-
-## bStats
-[![](https://bstats.org/signatures/bukkit/SimpleCLaimSystem.svg)]([https://bstats.org/plugin/bukkit/SimpleClaimSystem/21435](https://bstats.org/plugin/bukkit/SimpleClaimSystem/21435))
+### - SimpleClaimSystem Wiki (mostly the same, so recommended unless a DetailedClaimSystem wiki is made) ([here](https://xyness.gitbook.io/simpleclaimsystem))
+### - ([Hierosoft Discord Server](https://discord.gg/YGMzzan))

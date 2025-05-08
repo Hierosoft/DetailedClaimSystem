@@ -157,9 +157,9 @@ public class SimpleClaimSystem extends JavaPlugin {
         if (loadConfig(false, Bukkit.getConsoleSender())) {
             info(" ");
             info("SimpleClaimSystem is enabled !");
-            info("Discord for support : https://discord.gg/6sRTGprM95");
+            info("Discord for support : https://discord.gg/YGMzzan");
             info("Documentation : https://xyness.gitbook.io/simpleclaimsystem");
-            info("Developed by Xyness");
+            info("Developed by Hierosoft based on Xyness' SimpleClaimSystem");
         } else {
             Bukkit.getServer().getPluginManager().disablePlugin(this);
         }
@@ -178,9 +178,9 @@ public class SimpleClaimSystem extends JavaPlugin {
         Bukkit.getOnlinePlayers().forEach(p -> claimBossBarInstance.disableBossBar(p));
         info("==========================================================================");
         info("SimpleClaimSystem is disabled !");
-        info("Discord for support : https://discord.gg/6sRTGprM95");
+        info("Discord for support : https://discord.gg/YGMzzan");
         info("Documentation : https://xyness.gitbook.io/simpleclaimsystem");
-        info("Developed by Xyness");
+        info("Developed by Hierosoft based on Xyness' SimpleClaimSystem");
         info("==========================================================================");
     }
     
