@@ -214,7 +214,7 @@ public class SimpleClaimSystem extends JavaPlugin {
     	Runnable reloadTask = () -> {
     		
             if (reload) {
-            	sender.sendMessage(getLanguage().getMessage("reload-attempt"));
+            	sender.sendMessage(getLanguage().getMessage("reload-attempt", null));
             	info("==========================================================================");
             }
             
@@ -1029,9 +1029,9 @@ public class SimpleClaimSystem extends JavaPlugin {
             if(reload) {
             	info("==========================================================================");
                 if(status[0]) {
-                	sender.sendMessage(getLanguage().getMessage("reload-complete"));
+                	sender.sendMessage(getLanguage().getMessage("reload-complete", null));
                 } else {
-                	sender.sendMessage(getLanguage().getMessage("reload-not-complete"));
+                	sender.sendMessage(getLanguage().getMessage("reload-not-complete", null));
                 }
             }
     	};
@@ -1056,7 +1056,7 @@ public class SimpleClaimSystem extends JavaPlugin {
     	
     	executeAsync(() -> {
     		
-    		sender.sendMessage(getLanguage().getMessage("config-reload-attempt"));
+    		sender.sendMessage(getLanguage().getMessage("config-reload-attempt", null));
     		info("==========================================================================");
     		
     		// Save and reload config
@@ -1644,9 +1644,9 @@ public class SimpleClaimSystem extends JavaPlugin {
             info("==========================================================================");
             
             if(status[0]) {
-            	sender.sendMessage(getLanguage().getMessage("config-reload-complete"));
+            	sender.sendMessage(getLanguage().getMessage("config-reload-complete", null));
             } else {
-            	sender.sendMessage(getLanguage().getMessage("config-reload-not-complete"));
+            	sender.sendMessage(getLanguage().getMessage("config-reload-not-complete", null));
             }
     	});
         
@@ -2004,7 +2004,7 @@ public class SimpleClaimSystem extends JavaPlugin {
      */
     public String checkForUpdates() {
         try {
-        	URI uri = URI.create("https://raw.githubusercontent.com/Xyness/SimpleClaimSystem/main/version.yml");
+        	URI uri = URI.create("https://raw.githubusercontent.com/Hierosoft/DetailedClaimSystem/main/version.yml");
             URL url = uri.toURL();
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
@@ -2033,7 +2033,7 @@ public class SimpleClaimSystem extends JavaPlugin {
     public CompletableFuture<String> checkForUpdatesAsync() {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                URI uri = URI.create("https://raw.githubusercontent.com/Xyness/SimpleClaimSystem/main/version.yml");
+                URI uri = URI.create("https://raw.githubusercontent.com/Hierosoft/DetailedClaimSystem/main/version.yml");
                 URL url = uri.toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
