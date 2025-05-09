@@ -2559,8 +2559,8 @@ public class ClaimMain {
      * @param perm  the permission to check
      * @return true if the permission is allowed, false otherwise
      */
-    public boolean canPermCheck(Chunk chunk, String perm, String role) {
-        Claim claim = listClaims.get(chunk);
+    public boolean canPermCheck(Chunk chunk, String perm, String role, Zone zone) {
+        Claim claim = (zone != null) ? zone : listClaims.get(chunk);
         return claim != null && claim.getPermission(perm, role == null ? "natural" : role.toLowerCase());
     }
     
@@ -2578,7 +2578,7 @@ public class ClaimMain {
     /**
      * Checks if a player is a member of a claim.
      *
-     * @param claim  the claim to check
+     * @param claim  the Claim or Zone to check
      * @param player the player to check
      * @return true if the player is a member of the claim, false otherwise
      */
@@ -2589,7 +2589,7 @@ public class ClaimMain {
     /**
      * Checks if a player name is a member of a claim.
      *
-     * @param claim  the claim to check
+     * @param claim  the Claim or Zone to check
      * @param targetName the name of the player to check
      * @return true if the player name is a member of the claim, false otherwise
      */
@@ -2602,7 +2602,7 @@ public class ClaimMain {
     /**
      * Checks if a player is banned from a claim.
      *
-     * @param claim  the claim to check
+     * @param claim  the Claim or Zone to check
      * @param player the player to check
      * @return true if the player is banned from the claim, false otherwise
      */
@@ -2613,7 +2613,7 @@ public class ClaimMain {
     /**
      * Checks if a player name is banned from a claim.
      *
-     * @param claim  the claim to check
+     * @param claim  the Claim or Zone to check
      * @param targetName the name of the player to check
      * @return true if the player name is banned from the claim, false otherwise
      */
@@ -2843,7 +2843,8 @@ public class ClaimMain {
     }
     
     /**
-     * Method to apply current settings to all owner's claims.
+     * Method to apply current settings to all owner's claims, or
+     * if zone is not null, apply zone's permissions to all zones in the claim.
      *
      * @param claim the claim from which to apply settings to all player's claims (permission source and scope can be overridden by zone)
      * @param zone Limits the scope to current claim, and sets all areas to the permissions of this zone (null affects all claims!)
@@ -2874,11 +2875,11 @@ public class ClaimMain {
                 final Map<String,LinkedHashMap<String, Boolean>> finalPerms = new HashMap<>(perms);
 	            // Update settings
                 if (zone != null) {
-                    claim.getZones().forEach((key, otherArea) -> {
-                        otherArea.setPermissions(finalPerms);
-                        otherArea.dbUpdatePermissions(connection, permissions);
-                        updateWeatherChunk(claim, otherArea);
-                        updateFlyChunk(claim, otherArea);
+                    claim.getZones().forEach((key, otherZone) -> {
+                        otherZone.setPermissions(finalPerms);
+                        otherZone.dbUpdatePermissions(connection, permissions);
+                        updateWeatherChunk(claim, otherZone);
+                        updateFlyChunk(claim, otherZone);
                     });
                     return true; // return, since we are updating *only* all areas of one claim if areas is set.
                 }
@@ -2892,6 +2893,7 @@ public class ClaimMain {
 	            // Update database
 	            // try (Connection connection = instance.getDataSource().getConnection()) {
                 try {
+                    // NOTE: return before this if zone
 	                String updateQuery = "UPDATE scs_claims_1 SET permissions = ? WHERE owner_uuid = ?";
 	                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
 	                    preparedStatement.setString(1, permissions);
@@ -2922,8 +2924,8 @@ public class ClaimMain {
     	return CompletableFuture.supplyAsync(() -> {
             try {
 	        	// Get data
-	        	String claimName = claim.getName();
-	        	UUID uuid = claim.getUUID();
+	        	// String claimName = claim.getName();
+	        	// UUID uuid = claim.getUUID();  // UnsupportedOperationException if claim is a Zone
 	        	
 	        	// Add banned and remove member
 	        	UUID targetUUID = instance.getPlayerMain().getPlayerUUID(name);
@@ -2934,14 +2936,14 @@ public class ClaimMain {
 		        String banString = getBanString(claim);
 		        String memberString = getMemberString(claim);
 	            try (Connection connection = instance.getDataSource().getConnection()) {
-	                String updateQuery = "UPDATE scs_claims_1 SET bans = ?, members = ? WHERE owner_uuid = ? AND claim_name = ?";
+	                String updateQuery = claim.sqlUpdateBansAndMembers();
 	                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
-	                    preparedStatement.setString(1, banString);
-	                    preparedStatement.setString(2, memberString);
-	                    preparedStatement.setString(3, uuid.toString());
-	                    preparedStatement.setString(4, claimName);
+                        claim.prepareUpdateTwoStrings(preparedStatement, banString, memberString);
 	                    preparedStatement.executeUpdate();
-	                }
+	                } catch (SQLException e) {
+                        e.printStackTrace();
+                        return false;
+                    }
 	                return true;
 	            } catch (SQLException e) {
 	                e.printStackTrace();
@@ -2967,7 +2969,7 @@ public class ClaimMain {
 	        	// Get data
 	        	String claimName = claim.getName();
 	        	UUID targetUUID = instance.getPlayerMain().getPlayerUUID(name);
-	        	UUID uuid = claim.getUUID();
+	        	// UUID uuid = claim.getUUID(); // UnsupportedOperationException if claim is a Zone
 	        	
 	        	// Remove banned
 	            claim.removeBan(targetUUID);
@@ -2975,13 +2977,14 @@ public class ClaimMain {
 	            // Update database
 	            String banString = getBanString(claim);
 	            try (Connection connection = instance.getDataSource().getConnection()) {
-	                String updateQuery = "UPDATE scs_claims_1 SET bans = ? WHERE owner_uuid = ? AND claim_name = ?";
+	                String updateQuery = claim.sqlUpdateBans();
 	                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
-	                    preparedStatement.setString(1, banString);
-	                    preparedStatement.setString(2, uuid.toString());
-	                    preparedStatement.setString(3, claimName);
+                        claim.prepareUpdateOneString(preparedStatement, banString);
 	                    preparedStatement.executeUpdate();
-	                }
+	                } catch (SQLException e) {
+                        e.printStackTrace();
+                        return false;
+                    }
 	                return true;
 	            } catch (SQLException e) {
 	                e.printStackTrace();
@@ -3086,48 +3089,36 @@ public class ClaimMain {
     /**
      * Method to add a member to a claim.
      *
-     * @param claim the claim
+     * @param claim the Claim or Zone
      * @param name the name of the member to be added
      * @return true if the operation was successful, false otherwise
      */
-    public CompletableFuture<Boolean> addClaimMember(Claim claim, String name, Zone zone) {
+    public CompletableFuture<Boolean> addClaimMember(Claim claim, String name) {
     	return CompletableFuture.supplyAsync(() -> {
             try {
-            	
             	// Get data
-            	UUID uuid = claim.getUUID();
+            	// UUID uuid = claim.getUUID(); // UnsupportedOperationException operation if Zone
             	UUID targetUUID = instance.getPlayerMain().getPlayerUUID(name);
-            	
+
 	        	// Add member
 	            claim.addMember(targetUUID);
 	            
 	            // Update database
-	            String membersString = null;
-                if (zone != null) {
-                    membersString = zone.getMembersString();
-                    try (Connection connection = instance.getDataSource().getConnection()) {
-                        return zone.dbUpdateMembers(connection, membersString);
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                        return false;
-                    }
-                } else {
-                    membersString = getMemberString(claim);
-                    try (Connection connection = instance.getDataSource().getConnection()) {
-                        String updateQuery = "UPDATE scs_claims_1 SET members = ? WHERE owner_uuid = ? AND claim_name = ?";
-                        try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
-                            preparedStatement.setString(1, membersString);
-                            preparedStatement.setString(2, uuid.toString());
-                            preparedStatement.setString(3, claim.getName());
-                            preparedStatement.executeUpdate();
-                        }
+	            final String membersString = claim.getMembersString();
+                try (Connection connection = instance.getDataSource().getConnection()) {
+                    String updateQuery = claim.sqlUpdateMembers();
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
+                        claim.prepareUpdateOneString(preparedStatement, membersString);
+                        preparedStatement.executeUpdate();
                         return true;
                     } catch (SQLException e) {
                         e.printStackTrace();
                         return false;
                     }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
                 }
-
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	            return false;
@@ -3179,7 +3170,7 @@ public class ClaimMain {
     }
     
     /**
-     * Method to remove a member from a claim.
+     * Method to remove a member from a Claim or Zone.
      *
      * @param claim the claim
      * @param name the name of the member to be removed
@@ -3189,20 +3180,18 @@ public class ClaimMain {
         return CompletableFuture.supplyAsync(() -> {
             try {
             	// Get data
-            	UUID uuid = claim.getUUID();
+                // UUID uuid = claim.getUUID();  // UnsupportedOperationException if claim is a Zone
             	UUID targetUUID = instance.getPlayerMain().getPlayerUUID(name);
-            	
+
 	        	// Add member
-	            claim.removeMember(targetUUID);
+                claim.removeMember(targetUUID);
 	            
 	            // Update database
 	            String membersString = getMemberString(claim);
 	            try (Connection connection = instance.getDataSource().getConnection()) {
-	                String updateQuery = "UPDATE scs_claims_1 SET Members = ? WHERE owner_uuid = ? AND claim_name = ?";
+	                String updateQuery = claim.sqlUpdateMembers();
 	                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
-	                    preparedStatement.setString(1, membersString);
-	                    preparedStatement.setString(2, uuid.toString());
-	                    preparedStatement.setString(3, claim.getName());
+                        claim.prepareUpdateOneString(preparedStatement, membersString);
 	                    preparedStatement.executeUpdate();
 	                }
 	                return true;
@@ -3499,10 +3488,13 @@ public class ClaimMain {
 	            try (Connection connection = instance.getDataSource().getConnection()) {
 	                String updateQuery = claim.sqlUpdateDescription();
 	                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
-                        claim.prepareUpdate(preparedStatement, description);
+                        claim.prepareUpdateOneString(preparedStatement, description);
 	                    preparedStatement.executeUpdate();
-	                }
-	                return true;
+                        return true;
+	                } catch (SQLException e) {
+                        e.printStackTrace();
+                        return false;
+                    }
 	            } catch (SQLException e) {
 	                e.printStackTrace();
 	                return false;
@@ -3604,14 +3596,13 @@ public class ClaimMain {
 	            // Get uuid of the owner
 	        	UUID uuid = owner.equals("*") ? SERVER_UUID : instance.getPlayerMain().getPlayerUUID(owner);
 
-	        	// Update perms
-	            playerClaims.computeIfAbsent(uuid, k -> new CustomSet<>()).stream().forEach(c -> {
-	            	c.setPermissions(new HashMap<>(perm));
-	                updateWeatherChunk(c, null);
-	                updateFlyChunk(c, null);
-	            });
-	            
-	            try (Connection connection = instance.getDataSource().getConnection()) {
+                try (Connection connection = instance.getDataSource().getConnection()) {
+                    // Update perms
+                    playerClaims.computeIfAbsent(uuid, k -> new CustomSet<>()).stream().forEach(c -> {
+                        c.setPermissions(new HashMap<>(perm));
+                        updateWeatherChunk(c, null);
+                        updateFlyChunk(c, null);
+                    });
 	                String updateQuery = "UPDATE scs_claims_1 SET permissions = ? WHERE owner_uuid = ?";
 	                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
 	                    preparedStatement.setString(1, defaultValue);
@@ -3645,7 +3636,7 @@ public class ClaimMain {
 	        	String defaultValue = instance.getSettings().getDefaultValuesCode("all");
 	        	Map<String,LinkedHashMap<String,Boolean>> perm = new HashMap<>(instance.getSettings().getDefaultValues());
 
-                // TODO: reset areas?
+                // TODO: reset zones?
 
                 // Update perms
 	            claim.setPermissions(perm);
@@ -3680,7 +3671,7 @@ public class ClaimMain {
      * @return true if the operation was successful, false otherwise
      */
     public CompletableFuture<Boolean> resetAllPlayerClaimsSettings() {
-        // TODO: handle areas?
+        // TODO: handle zones?
         return CompletableFuture.supplyAsync(() -> {
             try {
 	        	String defaultValue = instance.getSettings().getDefaultValuesCode("all");
@@ -5080,8 +5071,11 @@ public class ClaimMain {
      */
     public String getRelation(Player player, Chunk chunk) {
     	Claim claim = listClaims.get(chunk);
+        Zone zone = claim.getZoneAt(player);
+        Claim scope = (zone != null) ? zone : claim;
+        // zone: null since these translation strings are just colors.
     	if(claim == null) return instance.getLanguage().getMessage("map-claim-relation-visitor", null);
-    	return checkMembre(claim, player) ? instance.getLanguage().getMessage("map-claim-relation-member", null) : instance.getLanguage().getMessage("map-claim-relation-visitor", null);
+    	return checkMembre(scope, player) ? instance.getLanguage().getMessage("map-claim-relation-member", null) : instance.getLanguage().getMessage("map-claim-relation-visitor", null);
     }
     
     /**
@@ -5096,14 +5090,24 @@ public class ClaimMain {
 	    	Bukkit.getOnlinePlayers().stream().forEach(p -> {
 	    		Bukkit.getRegionScheduler().run(instance, p.getLocation(), task -> {
 					Chunk c = p.getLocation().getChunk();
+                    Claim scope = (zone != null) ? zone : claim;
 					if (chunks.contains(c) && (zone == null || zone.contains(p.getLocation()))) {
-						boolean value = claim.getPermissionForPlayer("Weather", p);
+                        // Claim chunks contains player chunk, & zone contains player
+						boolean value = scope.getPermissionForPlayer("Weather", p);
 		                if(value) {
 		                	p.resetPlayerWeather();
 		                } else {
 		                	p.setPlayerWeather(WeatherType.CLEAR);
 		                }
-					}
+					} else if (chunks.contains(c)) {
+                        // Claim chunks contains player chunk, though zone does not or is null
+                        boolean value = claim.getPermissionForPlayer("Weather", p);
+                        if(value) {
+                            p.resetPlayerWeather();
+                        } else {
+                            p.setPlayerWeather(WeatherType.CLEAR);
+                        }
+                    }
 	    		});
 	    	});
 		} else {
@@ -5132,8 +5136,9 @@ public class ClaimMain {
 		if(!instance.isFolia()) {
 	    	Bukkit.getOnlinePlayers().stream().forEach(p -> {
 				Chunk c = p.getLocation().getChunk();
+                Claim scope = (zone != null) ? zone : claim;
 				if(chunks.contains(c) && (zone == null || zone.contains(p.getLocation()))) {
-					boolean value = claim.getPermissionForPlayer("Fly", p);
+					boolean value = scope.getPermissionForPlayer("Fly", p);
 	                CPlayer cPlayer = instance.getPlayerMain().getCPlayer(p.getUniqueId());
 	                if(value) {
 	                    if (cPlayer.getClaimAutofly()) {
@@ -5156,7 +5161,7 @@ public class ClaimMain {
      * @param claim the claim to be updated
      */
     public void resetWeatherChunk(Claim claim) {
-        // TODO: handle areas?
+        // TODO: handle zones?
 		Set<Chunk> chunks = claim.getChunks();
 		if(instance.isFolia()) {
 	    	Bukkit.getOnlinePlayers().stream().forEach(p -> {

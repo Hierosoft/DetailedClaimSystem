@@ -510,10 +510,36 @@ public class Zone extends Claim {
         // return "UPDATE scs_zones SET description = ? WHERE parent_claim_id = ? AND name = ?";
         return "UPDATE scs_zones SET description = ? WHERE parent_claim_id = ? AND name = ?";
     }
-    public void prepareUpdate(PreparedStatement preparedStatement, String newValue) throws SQLException {
+
+    @Override
+    public String sqlUpdateBans() {
+        // return "UPDATE scs_zones SET description = ? WHERE parent_claim_id = ? AND name = ?";
+        return "UPDATE scs_zones SET bans = ? WHERE parent_claim_id = ? AND name = ?";
+    }
+
+    @Override
+    public String sqlUpdateMembers() {
+        // return "UPDATE scs_zones SET description = ? WHERE parent_claim_id = ? AND name = ?";
+        return "UPDATE scs_zones SET members = ? WHERE parent_claim_id = ? AND name = ?";
+    }
+
+    @Override
+    public String sqlUpdateBansAndMembers() {
+        return "UPDATE scs_zones SET bans = ?, members = ? WHERE parent_claim_id = ? AND name = ?";
+    }
+
+    @Override
+    public void prepareUpdateOneString(PreparedStatement preparedStatement, String newValue) throws SQLException {
         preparedStatement.setString(1, newValue);
         preparedStatement.setInt(2, parentID);  // uuid.toString()
         preparedStatement.setString(3, getName());
+    }
+
+    public void prepareUpdateTwoStrings(PreparedStatement preparedStatement, String newValue1, String newValue2) throws SQLException {
+        preparedStatement.setString(1, newValue1);
+        preparedStatement.setString(2, newValue2);
+        preparedStatement.setInt(3, parentID);  // uuid.toString()
+        preparedStatement.setString(4, getName());
     }
 
 
@@ -596,6 +622,53 @@ public class Zone extends Claim {
                             preparedStatement.setString(1, ClaimMain.getBanString(zone));
                             preparedStatement.setInt(2, claim.getId());
                             preparedStatement.setString(3, zone.getName());
+                            preparedStatement.addBatch();
+                        }
+                        preparedStatement.executeBatch();
+                    }
+                    return true;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Method to add a member to all owner's claims.
+     *
+     * @param owner the owner of the claims
+     * @param name the name of the member to be added
+     * @return true if the operation was successful, false otherwise
+     */
+    public CompletableFuture<Boolean> addAllZonesMember(Claim claim, String name, SimpleClaimSystem instance) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+
+                // Get uuid of the owner and target
+                // UUID uuid = owner.equals("*") ? SERVER_UUID : instance.getPlayerMain().getPlayerUUID(owner);
+                // String uuid_string = uuid.toString();
+                UUID targetUUID = instance.getPlayerMain().getPlayerUUID(name);
+
+                // Remove member
+                // playerClaims.computeIfAbsent(uuid, k -> new CustomSet<>()).stream().forEach(claim -> claim.addMember(targetUUID));
+                for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                    entry.getValue().addMember(targetUUID);
+                }
+
+                // Update database
+                try (Connection connection = instance.getDataSource().getConnection()) {
+                    String updateQuery = "UPDATE scs_zones SET members = ? WHERE parent_claim_id = ? AND name = ?";
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
+                        for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                            Zone zone = entry.getValue();
+                            preparedStatement.setString(1, ClaimMain.getMemberString(zone));
+                            preparedStatement.setInt(2, claim.getId());
+                            preparedStatement.setString(3, claim.getName());
                             preparedStatement.addBatch();
                         }
                         preparedStatement.executeBatch();

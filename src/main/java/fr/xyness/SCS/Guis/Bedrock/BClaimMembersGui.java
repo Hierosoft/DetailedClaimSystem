@@ -68,16 +68,17 @@ public class BClaimMembersGui {
 	        	if(player.getName().equals(member)) return;
 	        	if(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.remove")) {
 	        		String message = instance.getLanguage().getMessage("remove-member-success", zone).replace("%player%", member).replace("%claim-name%", claim.getName());
-	            	this.instance.getMain().removeClaimMember(claim, member)
+					Claim scope = (zone != null) ? zone : claim;
+	            	this.instance.getMain().removeClaimMember(scope, member)
 	            		.thenAccept(success -> {
 	            			if (success) {
 	            	        	instance.executeEntitySync(player, () -> player.sendMessage(message));
 	                            Player target = Bukkit.getPlayer(member);
 	                            if(target != null && target.isOnline()) {
-	                            	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("remove-claim-player").replace("%claim-name%", claim.getName()).replace("%owner%", member)));
+	                            	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("remove-claim-player", zone).replace("%claim-name%", claim.getName()).replace("%owner%", member)));
 	                            }
 	            			} else {
-	            				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+	            				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
 	            			}
 	            		})
 	                    .exceptionally(ex -> {

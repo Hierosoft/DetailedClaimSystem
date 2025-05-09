@@ -108,9 +108,9 @@ public class BClaimsOwnerGui {
      */
     public String getContent(String filter) {
     	if(filter.equals("all")) {
-    		return instance.getLanguage().getMessage("bedrock-gui-claims-owner-click-1");
+    		return instance.getLanguage().getMessage("bedrock-gui-claims-owner-click-1", null);
     	} else {
-    		return instance.getLanguage().getMessage("bedrock-gui-claims-owner-click-2");
+    		return instance.getLanguage().getMessage("bedrock-gui-claims-owner-click-2", null);
     	}
     }
     

@@ -38,21 +38,21 @@ public class BClaimConfirmationGui {
      */
     public BClaimConfirmationGui(Player player, SimpleClaimSystem instance, double price) {
     	this.floodgatePlayer = FloodgateApi.getInstance().getPlayer(player.getUniqueId());
-    	
+		// zone: null since this is a Claim purchase (For Zone see addzone instead)
     	String lore = "";
     	if(instance.getSettings().getBooleanSetting("economy") && price > 0) {
-    		lore += instance.getLanguage().getMessage("bedrock-claim-confirm-info-lore-economy")
+    		lore += instance.getLanguage().getMessage("bedrock-claim-confirm-info-lore-economy", null)
     				.replace("%price%", instance.getMain().getPrice(String.valueOf(price)))
     				.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))+"\n";
     	}
-    	lore += instance.getLanguage().getMessage("bedrock-claim-confirm-info-lore");
+    	lore += instance.getLanguage().getMessage("bedrock-claim-confirm-info-lore", null);
     	
         // Création d'un formulaire simple
     	ModalForm form = ModalForm.builder()
-	        .title(instance.getLanguage().getMessage("bedrock-gui-claim-confirm-title"))
+	        .title(instance.getLanguage().getMessage("bedrock-gui-claim-confirm-title", null))
 	        .content(lore)
-	        .button1(instance.getLanguage().getMessage("bedrock-confirm-title"))
-	        .button2(instance.getLanguage().getMessage("bedrock-cancel-title"))
+	        .button1(instance.getLanguage().getMessage("bedrock-confirm-title", null))
+	        .button2(instance.getLanguage().getMessage("bedrock-cancel-title", null))
 	        .invalidResultHandler(() -> ClaimCommand.isOnCreate.remove(player))
 	        .validResultHandler(response -> {
 	        	int clickedSlot = response.clickedButtonId();

@@ -142,7 +142,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
                     return false;
                 }
                 if (cPlayer.getClaimsCount() == 0) {
-                	player.sendMessage(instance.getLanguage().getMessage("player-has-no-claim"));
+                	player.sendMessage(instance.getLanguage().getMessage("player-has-no-claim", null));
                     return false;
                 }
                 if (instance.getSettings().getBooleanSetting("claim-confirmation")) {
@@ -153,7 +153,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
 	                    		if (success) {
 	                    			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
 	                    		} else {
-	                    			player.sendMessage(instance.getLanguage().getMessage("error"));
+	                    			player.sendMessage(instance.getLanguage().getMessage("error", null));
 	                    		}
 	                    	})
 	                        .exceptionally(ex -> {
@@ -176,7 +176,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
                 		if (success) {
                 			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
                 		} else {
-                			player.sendMessage(instance.getLanguage().getMessage("error"));
+                			player.sendMessage(instance.getLanguage().getMessage("error", null));
                 		}
                 	})
                     .exceptionally(ex -> {
@@ -199,7 +199,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
     	            		if (success) {
     	            			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
     	            		} else {
-    	            			player.sendMessage(instance.getLanguage().getMessage("error"));
+    	            			player.sendMessage(instance.getLanguage().getMessage("error", null));
     	            		}
     	            	})
     	                .exceptionally(ex -> {
@@ -222,7 +222,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
 	            		if (success) {
 	            			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
 	            		} else {
-	            			player.sendMessage(instance.getLanguage().getMessage("error"));
+	            			player.sendMessage(instance.getLanguage().getMessage("error", null));
 	            		}
 	            	})
 	                .exceptionally(ex -> {
@@ -249,7 +249,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
         			if (success) {
         				player.sendMessage(instance.getLanguage().getMessage("delete-claim-protected-area"));
         			} else {
-        				player.sendMessage(instance.getLanguage().getMessage("error"));
+        				player.sendMessage(instance.getLanguage().getMessage("error", null));
         			}
         		})
                 .exceptionally(ex -> {
@@ -272,7 +272,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
 	            		if (success) {
 	            			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
 	            		} else {
-	            			player.sendMessage(instance.getLanguage().getMessage("error"));
+	            			player.sendMessage(instance.getLanguage().getMessage("error", null));
 	            		}
 	            	})
 	                .exceptionally(ex -> {
@@ -295,7 +295,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
         		if (success) {
         			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
         		} else {
-        			player.sendMessage(instance.getLanguage().getMessage("error"));
+        			player.sendMessage(instance.getLanguage().getMessage("error", null));
         		}
         	})
             .exceptionally(ex -> {

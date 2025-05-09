@@ -50,8 +50,9 @@ public class BChunkConfirmationGui {
     	lore += instance.getLanguage().getMessage("bedrock-chunk-confirm-info-lore", null);
     	
         // Création d'un formulaire simple
+		// Creating a simple form
     	ModalForm form = ModalForm.builder()
-	        .title(instance.getLanguage().getMessage("bedrock-gui-chunk-confirm-title", null))  // "Confirm adding chunk?"
+	        .title(instance.getLanguage().getMessage("bedrock-gui-chunk-confirm-title", zone))  // "Confirm adding chunk?"
 	        .content(lore)
 	        .button1(instance.getLanguage().getMessage("bedrock-confirm-title", null))
 	        .button2(instance.getLanguage().getMessage("bedrock-cancel-title", null))

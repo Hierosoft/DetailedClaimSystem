@@ -109,15 +109,15 @@ public class BClaimsGui {
      */
     public String getContent(String filter) {
     	if(filter.equals("all")) {
-    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-1");
+    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-1", null);
     	} else if (filter.equals("sales")) {
-    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-2");
+    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-2", null);
     	} else if (filter.equals("online")) {
-    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-3");
+    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-3", null);
     	} else if (filter.equals("offline")) {
-    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-4");
+    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-4", null);
     	} else {
-    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-1");
+    		return instance.getLanguage().getMessage("bedrock-gui-claims-click-1", null);
     	}
     }
     

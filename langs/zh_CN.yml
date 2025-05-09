@@ -268,6 +268,7 @@ chunk-while-loading: "§f已加载区块：§a%loaded-chunks%§2/%chunks-count%�
 error-delete-zone: "§cAn error has occurred, check the world and coordinates of the zone. Otherwise contact an administrator."
 zone-must-be-in-claim: "§cA new zone must be in a claim."
 add-zone-not-owner: "§cThis zone is not in a claim you own."
+add-zone-no-box-selection: "§cYou must select an area with a wooden axe first."
 add-zone-overlapping-another: "§cThis zone overlaps zone %other-zone%."
 add-zone-successful: "§fThe zone §a%zone-boundingbox%§f has been added to §e%claim-name%§f."
 add-zone-already-owner-protected-area: |

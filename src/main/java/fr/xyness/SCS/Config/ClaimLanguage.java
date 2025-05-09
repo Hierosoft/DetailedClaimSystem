@@ -68,6 +68,21 @@ public class ClaimLanguage {
         put("bedrock-perms-updated", "bedrock-zone-perms-updated");
         put("claim-set-description-success", "zone-set-description-success");
         put("unbanned-claim-player", "unbanned-zone-player");
+        put("bedrock-gui-chunk-confirm-title", "bedrock-gui-zone-confirm-title");
+        put("gui-chunk-confirm-title", "gui-zone-confirm-title");
+        put("add-claim-player", "add-zone-player");
+        put("remove-claim-player", "remove-zone-player");
+        put("name-change-ask", "zone-name-change-ask");
+        put("name-change-success", "zone-name-change-success");
+        put("error-name-exists", "error-zone-name-exists");
+        put("elytra", "zone-elytra");
+        put("already-member", "already-zone-member");
+        put("incorrect-characters-name", "incorrect-characters-zone-name");
+        put("add-member-success", "add-zone-member-success");
+        put("not-member", "not-zone-member");
+        put("remove-member-success", "remove-zone-member-success");
+        put("remove-claim-protected-area-player", "remove-zone-protected-area-player");
+        put("add-claim-protected-area-player", "add-zone-protected-area-player");
         // TODO: Add any bedrock equivalents still missing
         // NOTE: The following are not for Zone (See remove chunk/zone instead): unclaim-title unclaim-lore
     }});

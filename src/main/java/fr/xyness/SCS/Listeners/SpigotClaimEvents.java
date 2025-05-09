@@ -378,7 +378,7 @@ public class SpigotClaimEvents implements Listener {
                         			if (instance.getSettings().getBooleanSetting("claim-particles")) instance.getMain().displayChunks(player, new CustomSet<>(claim.getChunks()), true, false);
                         			return;
                         		} else {
-                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
                         		}
                         	})
                             .exceptionally(ex -> {
@@ -425,7 +425,7 @@ public class SpigotClaimEvents implements Listener {
             			if (success) {
             				player.sendMessage(instance.getLanguage().getMessage("delete-claim-protected-area"));
             			} else {
-            				player.sendMessage(instance.getLanguage().getMessage("error"));
+            				player.sendMessage(instance.getLanguage().getMessage("error", null));
             			}
             		})
                     .exceptionally(ex -> {
@@ -445,7 +445,7 @@ public class SpigotClaimEvents implements Listener {
             		if (success) {
             			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("error"));
+            			player.sendMessage(instance.getLanguage().getMessage("error", null));
             		}
             	})
                 .exceptionally(ex -> {
@@ -509,7 +509,7 @@ public class SpigotClaimEvents implements Listener {
             			player.sendMessage(instance.getLanguage().getMessage("create-claim-success").replace("%remaining-claims%", instance.getMain().getNumberSeparate(String.valueOf(remainingClaims))));
             			if (instance.getSettings().getBooleanSetting("claim-particles")) instance.getMain().displayChunks(player, new CustomSet<>(Set.of(chunk)), true, false);
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("error"));
+            			player.sendMessage(instance.getLanguage().getMessage("error", null));
             		}
             	})
                 .exceptionally(ex -> {

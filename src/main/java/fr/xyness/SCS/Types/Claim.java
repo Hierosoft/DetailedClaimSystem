@@ -591,9 +591,28 @@ public class Claim {
         return "UPDATE scs_claims_1 SET claim_description = ? WHERE owner_uuid = ? AND claim_name = ?";
     }
 
-    public void prepareUpdate(PreparedStatement preparedStatement, String newValue) throws SQLException {
+    public String sqlUpdateBans() {
+        return "UPDATE scs_claims_1 SET bans = ? WHERE owner_uuid = ? AND claim_name = ?";
+    }
+
+    public String sqlUpdateMembers() {
+        return "UPDATE scs_claims_1 SET members = ? WHERE owner_uuid = ? AND claim_name = ?";
+    }
+
+    public String sqlUpdateBansAndMembers() {
+        return "UPDATE scs_claims_1 SET bans = ?, members = ? WHERE owner_uuid = ? AND claim_name = ?";
+    }
+
+    public void prepareUpdateOneString(PreparedStatement preparedStatement, String newValue) throws SQLException {
         preparedStatement.setString(1, newValue);
         preparedStatement.setString(2, owner);  // uuid.toString()
         preparedStatement.setString(3, getName());
+    }
+
+    public void prepareUpdateTwoStrings(PreparedStatement preparedStatement, String newValue1, String newValue2) throws SQLException {
+        preparedStatement.setString(1, newValue1);
+        preparedStatement.setString(2, newValue2);
+        preparedStatement.setString(3, owner);  // uuid.toString()
+        preparedStatement.setString(4, getName());
     }
 }

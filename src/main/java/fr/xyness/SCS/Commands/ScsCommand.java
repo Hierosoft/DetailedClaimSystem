@@ -186,7 +186,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     				if (success) {
     					sender.sendMessage(instance.getLanguage().getMessage("reset-of-player-claims-settings-successful"));
     				} else {
-    					sender.sendMessage(instance.getLanguage().getMessage("error"));
+    					sender.sendMessage(instance.getLanguage().getMessage("error", null));
     				}
     			})
     	        .exceptionally(ex -> {
@@ -201,7 +201,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     				if (success) {
     					sender.sendMessage(instance.getLanguage().getMessage("reset-of-admin-claims-settings-successful"));
     				} else {
-    					sender.sendMessage(instance.getLanguage().getMessage("error"));
+    					sender.sendMessage(instance.getLanguage().getMessage("error", null));
     				}
     			})
     	        .exceptionally(ex -> {
@@ -235,7 +235,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
         				if (success) {
         					player.sendMessage(instance.getLanguage().getMessage("forceunclaim-success").replace("%owner%", owner));
         				} else {
-        					player.sendMessage(instance.getLanguage().getMessage("error"));
+        					player.sendMessage(instance.getLanguage().getMessage("error", null));
         				}
         			})
         	        .exceptionally(ex -> {
@@ -285,7 +285,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
                 if (target == null) {
                 	instance.getOfflinePlayer(args[1], otarget -> {
                         if (otarget == null || !otarget.hasPlayedBefore()) {
-                        	player.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[1]));
+                        	player.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[1]));
                             return;
                         }
                         targetName[0] = otarget.getName();
@@ -373,7 +373,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
                             if (newOwner == null) {
                             	instance.getOfflinePlayer(args[1], otarget -> {
                                     if (otarget == null || !otarget.hasPlayedBefore()) {
-                                    	player.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[1]));
+                                    	player.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[1]));
                                         return;
                                     }
                                     ownerName[0] = otarget.getName();
@@ -417,7 +417,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
                             if (newOwner == null) {
                             	instance.getOfflinePlayer(args[1], otarget -> {
                                     if (otarget == null || !otarget.hasPlayedBefore()) {
-                                    	player.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[1]));
+                                    	player.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[1]));
                                         return;
                                     }
                                     ownerName[0] = otarget.getName();
@@ -434,7 +434,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
                 if (target == null) {
                 	instance.getOfflinePlayer(args[1], otarget -> {
                         if (otarget == null || !otarget.hasPlayedBefore()) {
-                        	player.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[1]));
+                        	player.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[1]));
                             return;
                         }
                         targetName[0] = otarget.getName();
@@ -504,7 +504,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
                     					target.sendMessage(instance.getLanguage().getMessage("player-all-claim-unclaimed-by-admin").replace("%player%", player.getName()));
                     				}
         						} else {
-        							player.sendMessage(instance.getLanguage().getMessage("error"));
+        							player.sendMessage(instance.getLanguage().getMessage("error", null));
         						}
         					})
         			        .exceptionally(ex -> {
@@ -529,7 +529,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
                         					target.sendMessage(instance.getLanguage().getMessage("player-claim-unclaimed-by-admin").replace("%name%", args[3]).replace("%player%", player.getName()));
                         				}
                 					} else {
-                						player.sendMessage(instance.getLanguage().getMessage("error"));
+                						player.sendMessage(instance.getLanguage().getMessage("error", null));
                 					}
                 				})
                 		        .exceptionally(ex -> {
@@ -547,7 +547,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -584,7 +584,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -621,7 +621,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -658,7 +658,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -695,7 +695,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -732,7 +732,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -769,7 +769,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -806,7 +806,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -843,7 +843,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -880,7 +880,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -918,7 +918,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
     			instance.getOfflinePlayer(args[2], p -> {
     				instance.executeSync(() -> {
                         if (p == null || !p.hasPlayedBefore()) {
-                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played").replace("%player%", args[2]));
+                        	sender.sendMessage(instance.getLanguage().getMessage("player-never-played", null).replace("%player%", args[2]));
                             return;
                         }
                         String targetName = p.getName();
@@ -955,7 +955,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
         	if(args[1].equalsIgnoreCase("add-limit")) {
     			Player target = Bukkit.getPlayer(args[2]);
     			if(target == null) {
-    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online").replace("%player%", args[2]));
+    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online", null).replace("%player%", args[2]));
     				return;
     			}
     			String name = target.getName();
@@ -989,7 +989,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
         	if(args[1].equalsIgnoreCase("add-radius")) {
     			Player target = Bukkit.getPlayer(args[2]);
     			if(target == null) {
-    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online").replace("%player%", args[2]));
+    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online", null).replace("%player%", args[2]));
     				return;
     			}
     			String name = target.getName();
@@ -1023,7 +1023,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
         	if(args[1].equalsIgnoreCase("add-members")) {
     			Player target = Bukkit.getPlayer(args[2]);
     			if(target == null) {
-    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online").replace("%player%", args[2]));
+    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online", null).replace("%player%", args[2]));
     				return;
     			}
     			String name = target.getName();
@@ -1057,7 +1057,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
         	if(args[1].equalsIgnoreCase("add-chunks-per-claim")) {
     			Player target = Bukkit.getPlayer(args[2]);
     			if(target == null) {
-    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online").replace("%player%", args[2]));
+    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online", null).replace("%player%", args[2]));
     				return;
     			}
     			String name = target.getName();
@@ -1091,7 +1091,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
         	if(args[1].equalsIgnoreCase("add-chunks-total")) {
     			Player target = Bukkit.getPlayer(args[2]);
     			if(target == null) {
-    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online").replace("%player%", args[2]));
+    				sender.sendMessage(instance.getLanguage().getMessage("player-not-online", null).replace("%player%", args[2]));
     				return;
     			}
     			String name = target.getName();

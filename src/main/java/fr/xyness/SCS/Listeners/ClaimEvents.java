@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import fr.xyness.SCS.Zone;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -168,13 +169,14 @@ public class ClaimEvents implements Listener {
             	if (player.hasPermission("scs.bypass")) return;
             	Chunk chunk = player.getLocation().getChunk();
                 Claim claim = instance.getMain().getClaim(chunk);
+				Zone zone = claim.getZoneAt(player);
                 if (claim != null) {
                     if (!claim.getPermissionForPlayer("Elytra", player)) {
-                    	instance.getMain().sendMessage(player, instance.getLanguage().getMessage("elytra"), instance.getSettings().getSetting("protection-message"));
+                    	instance.getMain().sendMessage(player, instance.getLanguage().getMessage("elytra", zone), instance.getSettings().getSetting("protection-message"));
                     	event.setCancelled(true);
                     }
                 } else if (mode == WorldMode.SURVIVAL_REQUIRING_CLAIMS && !instance.getSettings().getSettingSRC("Elytra")) {
-                	instance.getMain().sendMessage(player, instance.getLanguage().getMessage("elytra-mode"), instance.getSettings().getSetting("protection-message"));
+                	instance.getMain().sendMessage(player, instance.getLanguage().getMessage("elytra-mode", null), instance.getSettings().getSetting("protection-message"));
                 	event.setCancelled(true);
                 }
             }
@@ -1909,7 +1911,7 @@ public class ClaimEvents implements Listener {
                         			if (instance.getSettings().getBooleanSetting("claim-particles")) instance.getMain().displayChunks(player, new CustomSet<>(claim.getChunks()), true, false);
                         			return;
                         		} else {
-                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
                         		}
                         	})
                             .exceptionally(ex -> {
@@ -1956,7 +1958,7 @@ public class ClaimEvents implements Listener {
             			if (success) {
             				player.sendMessage(instance.getLanguage().getMessage("delete-claim-protected-area"));
             			} else {
-            				player.sendMessage(instance.getLanguage().getMessage("error"));
+            				player.sendMessage(instance.getLanguage().getMessage("error", null));
             			}
             		})
                     .exceptionally(ex -> {
@@ -1976,7 +1978,7 @@ public class ClaimEvents implements Listener {
             		if (success) {
             			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("error"));
+            			player.sendMessage(instance.getLanguage().getMessage("error", null));
             		}
             	})
                 .exceptionally(ex -> {
@@ -2040,7 +2042,7 @@ public class ClaimEvents implements Listener {
             			player.sendMessage(instance.getLanguage().getMessage("create-claim-success").replace("%remaining-claims%", instance.getMain().getNumberSeparate(String.valueOf(remainingClaims))));
             			if (instance.getSettings().getBooleanSetting("claim-particles")) instance.getMain().displayChunks(player, new CustomSet<>(Set.of(chunk)), true, false);
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("error"));
+            			player.sendMessage(instance.getLanguage().getMessage("error", null));
             		}
             	})
                 .exceptionally(ex -> {

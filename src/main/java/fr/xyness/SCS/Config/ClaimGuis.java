@@ -304,8 +304,9 @@ public class ClaimGuis {
                 // zone_gui_name has "<zone>" to show it is not loaded from a file as-is ("<>" can't be used in filenames),
                 //   while the gui_name entry is loaded as-is.
                 // int rows = config.getInt("rows");
-                String zone_title_id = ClaimLanguage.zoneFields.getOrDefault(title_id, title_id);
-                String zone_title = instance.getLanguage().getMessage(zone_title_id, null);
+                String zone_title_id = ClaimLanguage.zoneFields.getOrDefault(title_id, title_id);  // such as gui-zone-confirm-title
+                String zone_title = instance.getLanguage().getMessage(zone_title_id, null);  // zone: null since already used zone to get zone_title_id
+
                 // ^ getMessage also checks zoneFields if not null zone, but we are making a separate section for zone
                 // int list_start_slot = config.getInt("list-start-slot");
                 // int list_end_slot = config.getInt("list-end-slot");
