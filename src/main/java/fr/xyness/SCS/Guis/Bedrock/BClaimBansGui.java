@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import fr.xyness.SCS.Zone;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -47,16 +48,17 @@ public class BClaimBansGui {
      * @param claim  The claim for which the GUI is displayed.
      * @param instance The instance of the SimpleClaimSystem plugin.
      */
-    public BClaimBansGui(Player player, Claim claim, SimpleClaimSystem instance) {
+    public BClaimBansGui(Player player, Claim claim, SimpleClaimSystem instance, Zone zone) {
     	this.instance = instance;
     	this.floodgatePlayer = FloodgateApi.getInstance().getPlayer(player.getUniqueId());
     	
         // Création d'un formulaire simple
+		// Creating a simple form
     	SimpleForm.Builder form = SimpleForm.builder()
-	        .title(instance.getLanguage().getMessage("bedrock-gui-bans-title")
+	        .title(instance.getLanguage().getMessage("bedrock-gui-bans-title", zone)
 	    			.replace("%name%", claim.getName()))
-	        .button(instance.getLanguage().getMessage("bedrock-back-page-main"))
-	        .content(instance.getLanguage().getMessage("bedrock-gui-bans-click"))
+	        .button(instance.getLanguage().getMessage("bedrock-back-page-main", zone))
+	        .content(instance.getLanguage().getMessage("bedrock-gui-bans-click", zone))
 	        .validResultHandler(response -> {
 	        	if(response.clickedButtonId() == 0) {
 	        		new BClaimMainGui(player,claim,instance);
@@ -65,17 +67,17 @@ public class BClaimBansGui {
 	        	String banned = response.clickedButton().text();
 	        	if(player.getName().equals(banned)) return;
 	        	if(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.unban")){
-	        		String message = instance.getLanguage().getMessage("remove-ban-success").replace("%player%", banned).replace("%claim-name%", claim.getName());
+	        		String message = instance.getLanguage().getMessage("remove-ban-success", zone).replace("%player%", banned).replace("%claim-name%", claim.getName());
 	            	this.instance.getMain().removeClaimBan(claim, banned)
 	            		.thenAccept(success -> {
 	            			if (success) {
 	            				instance.executeEntitySync(player, () -> player.sendMessage(message));
 	                            Player target = Bukkit.getPlayer(banned);
 	            		        if (target != null && target.isOnline()) {
-	            		        	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("unbanned-claim-player").replace("%owner%", player.getName()).replace("%claim-name%", claim.getName())));
+	            		        	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("unbanned-claim-player", zone).replace("%owner%", player.getName()).replace("%claim-name%", claim.getName())));
 	            		        }
 	            			} else {
-	            				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+	            				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
 	            			}
 	            		})
 	                    .exceptionally(ex -> {

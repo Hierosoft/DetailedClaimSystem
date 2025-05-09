@@ -63,24 +63,24 @@ public class BClaimMainGui {
 	        	switch(buttonId) {
 		        	case 0:
 		        		if(checkPermButton(player,"manage-bans")) {
-		        			new BClaimBansGui(player,claim,instance);
+		        			new BClaimBansGui(player, claim, instance, zone);
 		        		}
 		        		break;
 		        	case 1:
 		        		if(checkPermButton(player,"manage-members")) {
-		        			new BClaimMembersGui(player,claim,instance);
+		        			new BClaimMembersGui(player, claim, instance, zone);
 		        		}
 		        		break;
 		        	case 2:
 						// TODO: Separate manage-zones permission? Maybe just leave it with chunks
 						//  (Already uses same GUI class--only text & behavior changes)
 		        		if(checkPermButton(player,"manage-chunks")) {
-		        			new BClaimChunksGui(player,claim,instance);
+		        			new BClaimChunksGui(player, claim, instance, (zone != null));
 		        		}
 		        		break;
 		        	case 3:
 		        		if(checkPermButton(player,"manage-settings")) {
-		        			new BClaimSettingsGui(player,claim,instance);
+							new BClaimSettingsGui(player, claim, instance, zone);
 		        		}
 		        		break;
 		        	case 4:

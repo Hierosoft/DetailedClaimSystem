@@ -57,7 +57,7 @@ public class ClaimBansGui implements InventoryHolder {
     public ClaimBansGui(Player player, Claim claim, int page, SimpleClaimSystem instance) {
     	this.instance = instance;
     	this.player = player;
-    	final Zone zone = claim.setZoneOfGUIByLocation(player);
+    	final Zone zone = claim.getZoneAt(player);
     	// Get title
     	GuiSettings guiSettings = ClaimGuis.getGuiSettings("bans", zone);
     	String title = guiSettings.getTitle()  // if zone!=null,

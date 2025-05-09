@@ -43,7 +43,7 @@ public class BClaimConfirmationGui {
     	if(instance.getSettings().getBooleanSetting("economy") && price > 0) {
     		lore += instance.getLanguage().getMessage("bedrock-claim-confirm-info-lore-economy")
     				.replace("%price%", instance.getMain().getPrice(String.valueOf(price)))
-    				.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))+"\n";
+    				.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))+"\n";
     	}
     	lore += instance.getLanguage().getMessage("bedrock-claim-confirm-info-lore");
     	

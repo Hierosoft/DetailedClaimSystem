@@ -55,7 +55,7 @@ public class ClaimSettingsGui implements InventoryHolder {
     public ClaimSettingsGui(Player player, Claim claim, SimpleClaimSystem instance, String role) {
     	this.instance = instance;
     	this.player = player;
-		final Zone zone = claim.setZoneOfGUIByLocation(player);
+		final Zone zone = claim.getZoneAt(player);
 
     	String role_displayed;
     	switch(role) {
@@ -84,7 +84,7 @@ public class ClaimSettingsGui implements InventoryHolder {
         	if (success) {
         		instance.executeEntitySync(player, () -> player.openInventory(inv));
         	} else {
-        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         	}
         })
         .exceptionally(ex -> {
@@ -140,12 +140,13 @@ public class ClaimSettingsGui implements InventoryHolder {
     	            boolean permission = claim.getPermission(key,role);
     	            String statut = permission ? default_statut_enabled : default_statut_disabled;
     	            String choix = permission ? default_choix_enabled : default_choix_disabled;
-    	            lore.add(instance.getSettings().isEnabled(key) ? checkPermPerm(player,key) ? choix : instance.getLanguage().getMessage("gui-button-no-permission")+instance.getLanguage().getMessage("to-use-setting") : instance.getLanguage().getMessage("choice-setting-disabled"));
+					// zone: null since these errors are generic
+    	            lore.add(instance.getSettings().isEnabled(key) ? checkPermPerm(player,key) ? choix : instance.getLanguage().getMessage("gui-button-no-permission", null)+instance.getLanguage().getMessage("to-use-setting", null) : instance.getLanguage().getMessage("choice-setting-disabled", null));
     	            title = title.replace("%status%", statut);
     			} else if (key.equals("Filter")) {
     	            String loreFilter = instance.getLanguage().getMessage("role-lore", zone)
-    	                    .replaceAll("%status_color_" + getStatusIndex(role) + "%", instance.getLanguage().getMessage("status_color_active_filter"))
-    	                    .replaceAll("%status_color_[^" + getStatusIndex(role) + "]%", instance.getLanguage().getMessage("status_color_inactive_filter"));
+    	                    .replaceAll("%status_color_" + getStatusIndex(role) + "%", instance.getLanguage().getMessage("status_color_active_filter", null))
+    	                    .replaceAll("%status_color_[^" + getStatusIndex(role) + "]%", instance.getLanguage().getMessage("status_color_inactive_filter", null));
     	            lore = instance.getGuis().getLore(loreFilter);
     			}
     			if(title.isBlank()) title = null;
@@ -183,7 +184,7 @@ public class ClaimSettingsGui implements InventoryHolder {
     /**
      * Get the index of the current role.
      * 
-     * @param filter The current role.
+     * @param role The current role.
      * @return The index of the role.
      */
     private int getStatusIndex(String role) {

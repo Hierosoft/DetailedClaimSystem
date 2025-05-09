@@ -212,7 +212,7 @@ public class AdminGestionClaimsProtectedAreasGui implements InventoryHolder {
                 .replace("%location%", instance.getMain().getClaimCoords(claim))
 	    		.replace("%sale-status%", claim.getSale() ? (instance.getLanguage().getMessage("claim-info-lore-sale-status-true")
 					.replace("%price%", instance.getMain().getNumberSeparate(String.valueOf(claim.getPrice())))
-					.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))) : instance.getLanguage().getMessage("claim-info-lore-sale-status-false"));
+					.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))) : instance.getLanguage().getMessage("claim-info-lore-sale-status-false"));
             if (line.contains("%members%")) {
                 lore.addAll(Arrays.asList(getMembers(claim).split("\n")));
             } else if (line.contains("%bans%")) {

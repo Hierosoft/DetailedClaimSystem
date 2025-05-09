@@ -1894,11 +1894,11 @@ public class ClaimEvents implements Listener {
                             double balance = instance.getVault().getPlayerBalance(playerName);
 
                             if (balance < price[0]) {
-                            	instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price[0] - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))));
+                            	instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price[0] - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))));
                                 return;
                             }
                             instance.getVault().removePlayerBalance(playerName, price[0]);
-                            if (price[0] > 0) instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("you-paid-chunk").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price[0] * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))));
+                            if (price[0] > 0) instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("you-paid-chunk").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price[0] * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))));
                         }
                         instance.getMain().addClaimChunk(claim, chunk)
                         	.thenAccept(success -> {
@@ -2024,12 +2024,12 @@ public class ClaimEvents implements Listener {
                 double balance = instance.getVault().getPlayerBalance(playerName);
 
                 if (balance < price) {
-                	player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol")));
+                	player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null)));
                     return;
                 }
 
                 instance.getVault().removePlayerBalance(playerName, price);
-                if (price > 0) player.sendMessage(instance.getLanguage().getMessage("you-paid-claim").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol")));
+                if (price > 0) player.sendMessage(instance.getLanguage().getMessage("you-paid-claim").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null)));
             }
             
             // Create claim
@@ -2110,13 +2110,13 @@ public class ClaimEvents implements Listener {
                         ? instance.getLanguage().getMessage("enter-protected-area-for-sale-chat")
                         		.replace("%name%", toName)
                         		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                        		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
+                        		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
                         : instance.getLanguage().getMessage("enter-territory-for-sale-chat")
                           .replace("%owner%", ownerTO)
                           .replace("%player%", playerName)
                           .replace("%name%", toName)
                   		  .replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                  		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
                 message = ownerTO.equals("*")
                         ? instance.getLanguage().getMessage("enter-protected-area-chat").replace("%name%", toName)
@@ -2164,13 +2164,13 @@ public class ClaimEvents implements Listener {
                     ? instance.getLanguage().getMessage("enter-protected-area-for-sale")
                     		.replace("%name%", toName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                    		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
+                    		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
                     : instance.getLanguage().getMessage("enter-territory-for-sale")
                       .replace("%owner%", ownerTO)
                       .replace("%player%", playerName)
                       .replace("%name%", toName)
               		  .replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-              		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+              		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
         		message = ownerTO.equals("*")
                         ? instance.getLanguage().getMessage("enter-protected-area").replace("%name%", toName)
@@ -2218,25 +2218,25 @@ public class ClaimEvents implements Listener {
             	        .replace("%owner%", ownerTO)
             	        .replace("%player%", playerName)
                 		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
+                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
             			: instance.getLanguage().getMessage("enter-territory-for-sale-title")
                 	        .replace("%name%", toName)
                 	        .replace("%owner%", ownerTO)
                 	        .replace("%player%", playerName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
             	toSubtitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-for-sale-subtitle")
             	        .replace("%name%", toName)
             	        .replace("%owner%", ownerTO)
             	        .replace("%player%", playerName)
                 		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
+                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
             	        : instance.getLanguage().getMessage("enter-territory-for-sale-subtitle")
                 	        .replace("%name%", toName)
                 	        .replace("%owner%", ownerTO)
                 	        .replace("%player%", playerName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
             	toTitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-title")
             	        .replace("%name%", toName)

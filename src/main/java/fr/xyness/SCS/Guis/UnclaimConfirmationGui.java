@@ -67,7 +67,7 @@ public class UnclaimConfirmationGui implements InventoryHolder {
         	if (success) {
         		instance.executeEntitySync(player, () -> player.openInventory(inv));
         	} else {
-        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         	}
         })
         .exceptionally(ex -> {
@@ -92,7 +92,7 @@ public class UnclaimConfirmationGui implements InventoryHolder {
     	return CompletableFuture.supplyAsync(() -> {
 	        
 	        // Items
-    		List<GuiSlot> slots = new ArrayList<>(ClaimGuis.getGuiSlots(zone).get("unclaim_confirmation"));
+    		List<GuiSlot> slots = new ArrayList<>(ClaimGuis.getGuiSlots(null).get("unclaim_confirmation"));
     		for(GuiSlot slot : slots) {
     			int slot_int = slot.getSlot();
     			String title = slot.getTitle();

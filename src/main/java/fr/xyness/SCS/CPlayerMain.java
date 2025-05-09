@@ -332,7 +332,7 @@ public class CPlayerMain {
     /**
      * Get or create a player head with the correct texture.
      *
-     * @param player The OfflinePlayer object.
+     * @param playerName The player name.
      * @return The ItemStack representing the player's head.
      */
     public ItemStack getPlayerHead(String playerName) {
@@ -606,7 +606,7 @@ public class CPlayerMain {
      * Checks if a player can add a member to their claim.
      * 
      * @param player The player
-     * @param chunk The chunk
+     * @param claim The claim
      * @return True if the player can add a member, false otherwise
      */
     public boolean canAddMember(Player player, Claim claim) {

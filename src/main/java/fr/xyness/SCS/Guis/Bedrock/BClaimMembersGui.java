@@ -48,10 +48,9 @@ public class BClaimMembersGui {
      * @param claim  The claim for which the GUI is displayed.
      * @param instance The instance of the SimpleClaimSystem plugin.
      */
-    public BClaimMembersGui(Player player, Claim claim, SimpleClaimSystem instance) {
+    public BClaimMembersGui(Player player, Claim claim, SimpleClaimSystem instance, Zone zone) {
     	this.instance = instance;
     	this.floodgatePlayer = FloodgateApi.getInstance().getPlayer(player.getUniqueId());
-		Zone zone = claim.getZoneOfPlayerGUI(player);
         // Création d'un formulaire simple
 		// Creating a simple form
 		// zone: null for buttons applying only to claim rather than zone/chunk

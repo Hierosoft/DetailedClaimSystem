@@ -131,14 +131,14 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
         }
         
         if (args.length > 1) {
-        	player.sendMessage(instance.getLanguage().getMessage("help-unclaim").replace("%help-separator%", instance.getLanguage().getMessage("help-separator")));
+        	player.sendMessage(instance.getLanguage().getMessage("help-unclaim").replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)));
             return false;
         }
         
         if (args.length == 1) {
         	if (args[0].equals("*")) {
                 if (!instance.getPlayerMain().checkPermPlayer(player, "scs.command.unclaim.all")) {
-                	player.sendMessage(instance.getLanguage().getMessage("cmd-no-permission"));
+                	player.sendMessage(instance.getLanguage().getMessage("cmd-no-permission", null));
                     return false;
                 }
                 if (cPlayer.getClaimsCount() == 0) {
@@ -188,7 +188,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
             }
             Claim claim = instance.getMain().getClaimByName(args[0], player);
             if (claim == null) {
-            	player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found"));
+            	player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found", null));
                 return false;
             }
             if (instance.getSettings().getBooleanSetting("claim-confirmation")) {

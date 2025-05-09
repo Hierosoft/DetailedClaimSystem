@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import fr.xyness.SCS.Zone;
+import me.ryanhamshire.GriefPrevention.util.BoundingBox;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -110,8 +111,15 @@ public class Claim {
         this.bans = new HashSet<>(bans);
         this.id = id;
     }
-    
-    
+
+    public static String humanReadableChunk(Chunk chunk) {
+        return String.valueOf(chunk.getWorld().getName()+", X:"+chunk.getX()+", Z:"+chunk.getZ());
+    }
+    public static String machineReadableChunk(Chunk chunk) {
+        return String.valueOf(chunk.getWorld().getName()+";"+chunk.getX()+";"+chunk.getZ());
+    }
+
+
     // *********************
     // *  Others Methods   *
     // *********************
@@ -495,37 +503,97 @@ public class Claim {
      * @param datasource     Such as instance.getDataSource() (HikariDataSource or other that implements
      *                       javax.sql.DataSource and java.io.CLoseable)
      */
-    public void dbDeleteZones(DataSource datasource) {
+    public boolean dbDeleteZones(DataSource datasource) {
         // Update database
         try (Connection connection = datasource.getConnection()) {
-            String deleteZonesQuery = "DELETE FROM scs_zones WHERE parent_claim_id = ?";
-            try (PreparedStatement preparedStatement = connection.prepareStatement(deleteZonesQuery)) {
-                preparedStatement.setInt(1, getId());  // *all* zones with this parent claim id
-                preparedStatement.executeUpdate();
-            }
+            return dbDeleteZones(connection);
+        } catch (SQLException e) {
+            System.err.println(String.format("Connection failed to delete zones with parent_claim_id: %s", getId()));
+            e.printStackTrace();
+            return false;
+        }
+    }
+    public boolean dbDeleteZones(Connection connection) {
+        String deleteZonesQuery = "DELETE FROM scs_zones WHERE parent_claim_id = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(deleteZonesQuery)) {
+            preparedStatement.setInt(1, getId());  // *all* zones with this parent claim id
+            preparedStatement.executeUpdate();
+            return true;
         } catch (SQLException e) {
             System.err.println(String.format("Failed to delete zones with parent_claim_id: %s", getId()));
             e.printStackTrace();
+            return false;
         }
     }
+
+
     /**
      *Delete named Zone from *this* claim from the database.
      * @param datasource     Such as instance.getDataSource() (HikariDataSource or other that implements
-     *                       javax.sql.DataSource and java.io.CLoseable)
+     *                       javax.sql.DataSource and java.io.Closeable)
      */
-    public void dbDeleteZone(DataSource datasource, String zoneName) {
+    public boolean dbDeleteZone(DataSource datasource, String zoneName) {
         // Update database
         try (Connection connection = datasource.getConnection()) {
-            String deleteZonesQuery = "DELETE FROM scs_zones WHERE parent_claim_id = ? AND name = ?";
-            try (PreparedStatement preparedStatement = connection.prepareStatement(deleteZonesQuery)) {
-                preparedStatement.setInt(1, getId());
-                preparedStatement.setString(2, zoneName);
-                preparedStatement.executeUpdate();
-            }
+            return dbDeleteZone(connection, zoneName);
         } catch (SQLException e) {
-            System.err.println(String.format("Failed to delete zones with parent_claim_id: %s", getId()));
+            System.err.println(String.format("Connection failed to delete zone '%s' with parent_claim_id: %s", zoneName, getId()));
             e.printStackTrace();
-            return;
+            return false;
         }
+    }
+
+    /**
+     *Delete named Zone from *this* claim from the database.
+     * @param connection     Such as instance.getDataSource().getConnection() (HikariDataSource or other that implements
+     *                       javax.sql.DataSource and java.io.Closeable)
+     */
+    public boolean dbDeleteZone(Connection connection, String zoneName) {
+        String deleteZoneSql = "DELETE FROM scs_zones WHERE parent_claim_id = ? AND name = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(deleteZoneSql)) {
+            preparedStatement.setInt(1, getId());
+            preparedStatement.setString(2, zoneName);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println(String.format("Failed to delete zone '%s' with parent_claim_id: %s", zoneName, getId()));
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+    public boolean dbUpdateZone(DataSource datasource, String zoneName, BoundingBox bb) {
+        // Update database
+        try (Connection connection = datasource.getConnection()) {
+            return dbUpdateZone(connection, zoneName, bb);
+        } catch (SQLException e) {
+            System.err.println(String.format("Connection failed to update zone '%s' with parent_claim_id: %s", zoneName, getId()));
+            e.printStackTrace();
+            return false;
+        }
+    }
+    public boolean dbUpdateZone(Connection connection, String zoneName, BoundingBox bb) {
+        String updateZoneSql = "UPDATE scs_zones SET boundingbox = ? WHERE parent_claim_id = ? AND name = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(updateZoneSql)) {
+            preparedStatement.setString(1, Zone.serializeBoundingBox(bb));
+            preparedStatement.setInt(2, getId());
+            preparedStatement.setString(3, zoneName);
+            preparedStatement.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println(String.format("Failed to update zone '%s' with parent_claim_id: %s", zoneName, getId()));
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public String sqlUpdateDescription() {
+        // return "UPDATE scs_claims_1 SET claim_description = ? WHERE id_claim = ?";
+        return "UPDATE scs_claims_1 SET claim_description = ? WHERE owner_uuid = ? AND claim_name = ?";
+    }
+
+    public void prepareUpdate(PreparedStatement preparedStatement, String newValue) throws SQLException {
+        preparedStatement.setString(1, newValue);
+        preparedStatement.setString(2, owner);  // uuid.toString()
+        preparedStatement.setString(3, getName());
     }
 }

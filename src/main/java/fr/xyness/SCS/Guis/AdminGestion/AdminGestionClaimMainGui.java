@@ -110,7 +110,7 @@ public class AdminGestionClaimMainGui implements InventoryHolder {
 	        lore.add("§7Members: §a"+instance.getMain().getNumberSeparate(String.valueOf(claim.getMembers().size())));
 	        lore.add("§7Bans: §c"+instance.getMain().getNumberSeparate(String.valueOf(claim.getBans().size())));
 	        lore.add(" ");
-	        lore.add(claim.getSale() ? ("§a✔ Claim in sale §7("+instance.getMain().getNumberSeparate(String.valueOf(claim.getPrice()))+instance.getLanguage().getMessage("money-symbol")+"§7)") : "§c✘ Claim not in sale");
+	        lore.add(claim.getSale() ? ("§a✔ Claim in sale §7("+instance.getMain().getNumberSeparate(String.valueOf(claim.getPrice()))+instance.getLanguage().getMessage("money-symbol", null)+"§7)") : "§c✘ Claim not in sale");
 	        inv.setItem(13, instance.getGuis().createItem(Material.PAINTING, "§6"+claim.getName(), lore));
 	        
 	        lore.clear();

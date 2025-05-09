@@ -44,11 +44,9 @@ public class BClaimSettingsGui {
      * @param claim  The claim for which the GUI is displayed.
      * @param instance The instance of the SimpleClaimSystem plugin.
      */
-    public BClaimSettingsGui(Player player, Claim claim, SimpleClaimSystem instance) {
+    public BClaimSettingsGui(Player player, Claim claim, SimpleClaimSystem instance, Zone zone) {
     	this.instance = instance;
     	this.floodgatePlayer = FloodgateApi.getInstance().getPlayer(player.getUniqueId());
-		Zone zone = claim.setZoneOfGUIByLocation(player);
-
     	// Get CPlayer
     	CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
     	if(cPlayer == null) return;
@@ -82,13 +80,14 @@ public class BClaimSettingsGui {
 	        		perms.get("natural").put(key, response.asToggle(i));
 	        		i++;
 	        	}
-	        	String message = instance.getLanguage().getMessage("bedrock-perms-updated").replace("%claim-name%", claim.getName());
-            	this.instance.getMain().updatePermsBedrock(claim, perms)
+	        	String message = instance.getLanguage().getMessage("bedrock-perms-updated", zone).replace("%claim-name%", claim.getName());
+				String zoneName = (zone != null) ? zone.getName() : null;
+            	this.instance.getMain().updatePermsBedrock(claim, perms, zoneName)
 	        		.thenAccept(success -> {
 	        			if (success) {
 	        				instance.executeEntitySync(player, () -> player.sendMessage(message));
 	        			} else {
-	        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+	        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
 	        			}
 	        		})
 	                .exceptionally(ex -> {

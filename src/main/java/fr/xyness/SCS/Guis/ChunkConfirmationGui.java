@@ -53,18 +53,17 @@ public class ChunkConfirmationGui implements InventoryHolder {
      * @param instance The instance of the SimpleClaimSystem plugin.
      * @param price The price of the future chunk.
      */
-    public ChunkConfirmationGui(Player player, SimpleClaimSystem instance, double price) {
+    public ChunkConfirmationGui(Player player, SimpleClaimSystem instance, double price, Zone zone) {
     	this.instance = instance;
     	this.player = player;
-		// TODO: set price = 0 if zone!=null since zones can't be sold (already purchased the chunk(s))
+		if (zone != null) price = 0.0; // Can't purchase zones (A Zone must be in an existing Claim).
+
     	// Get title
-    	GuiSettings guiSettings = ClaimGuis.getGuiSettings("chunk_confirmation", null);
+    	GuiSettings guiSettings = ClaimGuis.getGuiSettings("chunk_confirmation", zone);
     	String title = guiSettings.getTitle();
 
 		CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
-		Zone zone = cPlayer.getGuiZone();
-
-		if (zone != null) price = 0;
+		// Zone zone = cPlayer.getGuiZone();
 
 		// Create the inventory
         inv = Bukkit.createInventory(this, guiSettings.getRows()*9, title);
@@ -94,16 +93,14 @@ public class ChunkConfirmationGui implements InventoryHolder {
      * @return A CompletableFuture with a boolean to check if the gui is correctly initialized.
      */
     public CompletableFuture<Boolean> loadItems(double price, Zone zone) {
-    	// zone: null since zones can't be sold.
     	return CompletableFuture.supplyAsync(() -> {
-
-			// TODO: set price = 0 if zone!=null since zones can't be sold (already purchased the chunk(s))
+			final double finalPrice = (zone != null) ? 0.0 : price;
     		List<GuiSlot> slots = new ArrayList<>(ClaimGuis.getGuiSlots(zone).get("chunk_confirmation"));
 			// ^ uses gui-title: "gui-chunk-confirm-title"
     		for(GuiSlot slot : slots) {
     			int slot_int = slot.getSlot();
     			String title = slot.getTitle();
-    			String lore_string = replaceLore(slot.getKey(), slot.getLore(), price);
+    			String lore_string = replaceLore(slot.getKey(), slot.getLore(), finalPrice);
     			List<String> lore = instance.getGuis().getLore(lore_string);
     			if(title.isBlank()) title = null;
     			if(lore.isEmpty()) lore = null;
@@ -111,7 +108,6 @@ public class ChunkConfirmationGui implements InventoryHolder {
     				CustomStack customItem = CustomStack.getInstance(slot.getCustomModelData());
     				if(customItem != null) {
     					Material mat = customItem.getItemStack().getType();
-    					
     					inv.setItem(slot_int, instance.getGuis().createItem(mat, title, lore));
     				}
     			} else {
@@ -141,7 +137,7 @@ public class ChunkConfirmationGui implements InventoryHolder {
     public String replaceLore(String key, String lore, double price) {
 		if(key.equalsIgnoreCase("main-item")) {
 			return lore.replace("%price%", instance.getMain().getPrice(String.valueOf(price)))
-    				.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+    				.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
 		}
     	return lore;
     }

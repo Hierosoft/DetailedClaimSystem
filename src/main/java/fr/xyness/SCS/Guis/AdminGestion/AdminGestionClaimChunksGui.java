@@ -46,8 +46,8 @@ public class AdminGestionClaimChunksGui implements InventoryHolder {
     // ******************
     // *  Constructors  *
     // ******************
-    
-    
+
+
     /**
      * Main constructor for AdminGestionClaimChunksGui.
      * 
@@ -56,9 +56,8 @@ public class AdminGestionClaimChunksGui implements InventoryHolder {
      * @param page   The current page of the GUI.
      * @param instance The instance of the SimpleClaimSystem plugin.
      */
-    public AdminGestionClaimChunksGui(Player player, Claim claim, int page, SimpleClaimSystem instance) {
+    public AdminGestionClaimChunksGui(Player player, Claim claim, int page, SimpleClaimSystem instance, Zone zone) {
     	this.instance = instance;
-        final Zone zone = claim.setZoneOfGUIByLocation(player);
         // TODO: translate these strings
         String title = (zone != null)
                 ? "§4[A]§r Zones: "+claim.getName()+" ("+claim.getOwner()+")"
@@ -105,6 +104,7 @@ public class AdminGestionClaimChunksGui implements InventoryHolder {
 	        int items_count = max_member_slot - min_member_slot + 1;
 	        if(page>1) inv.setItem(48, backPage(page - 1));
 	        inv.setItem(49, backMainMenu(claim.getName()));
+            // TODO: translate these strings.
 	        List<String> lore = new ArrayList<>(Arrays.asList(
                     "§7The chunk is part of the claim",
                     claim.getChunks().size() == 1 ? "§cYou can't remove the only remaining chunk" : "§c[Left-click]§7 to remove chunk"));
@@ -122,12 +122,17 @@ public class AdminGestionClaimChunksGui implements InventoryHolder {
 	            	inv.setItem(50, nextPage(page + 1));
 	                break;
 	            }
-	            cPlayer.addMapString(i, String.valueOf(chunk.getWorld().getName()+";"+chunk.getX()+";"+chunk.getZ()));
+                if (zone != null) {
+                    cPlayer.addMapString(i, zone.getName());
+                } else {
+                    cPlayer.addMapString(i, Claim.machineReadableChunk(chunk));
+                }
 	            ItemStack item = new ItemStack(Material.RED_MUSHROOM_BLOCK);
 	            ItemMeta meta = item.getItemMeta();
-	            meta.setDisplayName("§6Chunk-"+String.valueOf(chunk_count)+" §7("+String.valueOf(chunk.getWorld().getName()+", X:"+chunk.getX()+", Z:"+chunk.getZ())+")");
                 if (zone != null) {
                     meta.setDisplayName("["+zone.getName()+"] overrides "+zone+" in "+claim.getName());
+                } else {
+                    meta.setDisplayName("§6Chunk-"+String.valueOf(chunk_count)+" §7("+Claim.humanReadableChunk(chunk)+")");
                 }
 	            meta.setLore(lore);
 	            item.setItemMeta(meta);

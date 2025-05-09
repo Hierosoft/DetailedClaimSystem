@@ -2,6 +2,7 @@ package fr.xyness.SCS.Guis.Bedrock;
 
 import java.util.Set;
 
+import fr.xyness.SCS.Zone;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
 
@@ -44,7 +45,8 @@ public class BClaimChunksGui {
      * @param claim  The claim for which the GUI is displayed.
      * @param instance The instance of the SimpleClaimSystem plugin.
      */
-    public BClaimChunksGui(Player player, Claim claim, SimpleClaimSystem instance) {
+    public BClaimChunksGui(Player player, Claim claim, SimpleClaimSystem instance, boolean isZone) {
+		// Zone is boolean in this case, because multiple (or zero) zones are listed.
     	this.instance = instance;
     	this.floodgatePlayer = FloodgateApi.getInstance().getPlayer(player.getUniqueId());
     	
@@ -54,10 +56,10 @@ public class BClaimChunksGui {
     	
         // Création d'un formulaire simple
     	SimpleForm.Builder form = SimpleForm.builder()
-	        .title(instance.getLanguage().getMessage("bedrock-gui-chunks-title")
+	        .title(instance.getLanguage().getMessage("bedrock-gui-chunks-title", isZone)
 	    			.replace("%name%", claim.getName()))
-	        .button(instance.getLanguage().getMessage("bedrock-back-page-main"))
-	        .content(instance.getLanguage().getMessage("bedrock-gui-chunks-click"))
+	        .button(instance.getLanguage().getMessage("bedrock-back-page-main", isZone))
+	        .content(instance.getLanguage().getMessage("bedrock-gui-chunks-click", isZone))
 	        .validResultHandler(response -> {
 	        	int clickedSlot = response.clickedButtonId();
 	        	if(clickedSlot == 0) {
@@ -66,19 +68,35 @@ public class BClaimChunksGui {
 	        	}
 	        	String chunk = cPlayer.getMapString(clickedSlot);
 	        	if (!instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.delchunk")) return;
-	        	if (claim.getChunks().size() == 1) return;
-	        	this.instance.getMain().removeClaimChunk(claim, chunk)
-		    		.thenAccept(success -> {
-		    			if (success) {
-		    				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("delete-chunk-success").replace("%chunk%", "["+chunk+"]").replace("%claim-name%", claim.getName())));
-		    			} else {
-		    				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
-		    			}
-		    		})
-		            .exceptionally(ex -> {
-		                ex.printStackTrace();
-		                return null;
-		            });
+				if (isZone) {
+					this.instance.getMain().removeClaimZone(claim, chunk)
+							.thenAccept(success -> {
+								if (success) {
+									instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("delete-chunk-success", isZone).replace("%chunk%", "["+chunk+"]").replace("%claim-name%", claim.getName())));
+								} else {
+									instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
+								}
+							})
+							.exceptionally(ex -> {
+								ex.printStackTrace();
+								return null;
+							});
+
+				} else {
+					if (claim.getChunks().size() == 1) return;
+					this.instance.getMain().removeClaimChunk(claim, chunk)
+						.thenAccept(success -> {
+							if (success) {
+								instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("delete-chunk-success", isZone).replace("%chunk%", "["+chunk+"]").replace("%claim-name%", claim.getName())));
+							} else {
+								instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
+							}
+						})
+						.exceptionally(ex -> {
+							ex.printStackTrace();
+							return null;
+						});
+				}
 	        });
     	
         // Get claim data
@@ -89,7 +107,7 @@ public class BClaimChunksGui {
     	String chunkHeadUrl = "https://i.ibb.co/kg1gN8V3/chunks.png";
     	int i = 1;
         for (Chunk chunk : chunks) {
-        	cPlayer.addMapString(i, String.valueOf(chunk.getWorld().getName()+";"+chunk.getX()+";"+chunk.getZ()));
+        	cPlayer.addMapString(i, Claim.machineReadableChunk(chunk));
             form.button(String.valueOf(chunk.getWorld().getName()+", "+chunk.getX()+", "+chunk.getZ()), Type.URL, chunkHeadUrl);
             i++;
         }

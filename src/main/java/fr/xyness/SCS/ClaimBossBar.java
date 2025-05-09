@@ -112,46 +112,47 @@ public class ClaimBossBar {
             if(claim.getSale() && instance.getSettings().getBooleanSetting("announce-sale.bossbar")) {
             	b.setColor(saleColor);
             	b.setStyle(saleStyle);
+                // zone: null since can't sell Zone
                 if (owner.equals("*")) {
-                    title = instance.getLanguage().getMessage("bossbar-protected-area-for-sale-message",player)
+                    title = instance.getLanguage().getMessage("bossbar-protected-area-for-sale-message", player, null)
                     		.replace("%name%", chunkName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
                 } else if (owner.equals(player.getName())) {
-                    title = instance.getLanguage().getMessage("bossbar-owner-for-sale-message",player)
+                    title = instance.getLanguage().getMessage("bossbar-owner-for-sale-message", player, null)
                     		.replace("%owner%", owner)
                     		.replace("%name%", chunkName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
                 } else if (instance.getMain().checkMembre(claim, player)) {
-                    title = instance.getLanguage().getMessage("bossbar-member-for-sale-message",player)
+                    title = instance.getLanguage().getMessage("bossbar-member-for-sale-message", player, null)
                             .replace("%player%", player.getName())
                             .replace("%owner%", owner)
                             .replace("%name%", chunkName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
                 } else {
-                    title = instance.getLanguage().getMessage("bossbar-visitor-for-sale-message",player)
+                    title = instance.getLanguage().getMessage("bossbar-visitor-for-sale-message", player, null)
                             .replace("%player%", player.getName())
                             .replace("%owner%", owner)
                             .replace("%name%", chunkName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
                 }
             } else {
             	b.setColor(defaultColor);
             	b.setStyle(defaultStyle);
                 if (owner.equals("*")) {
-                    title = instance.getLanguage().getMessage("bossbar-protected-area-message",player).replace("%name%", chunkName);
+                    title = instance.getLanguage().getMessage("bossbar-protected-area-message", player, null).replace("%name%", chunkName);
                 } else if (owner.equals(player.getName())) {
-                    title = instance.getLanguage().getMessage("bossbar-owner-message",player).replace("%owner%", owner).replace("%name%", chunkName);
+                    title = instance.getLanguage().getMessage("bossbar-owner-message", player, null).replace("%owner%", owner).replace("%name%", chunkName);
                 } else if (instance.getMain().checkMembre(claim, player)) {
-                    title = instance.getLanguage().getMessage("bossbar-member-message",player)
+                    title = instance.getLanguage().getMessage("bossbar-member-message", player, null)
                             .replace("%player%", player.getName())
                             .replace("%owner%", owner)
                             .replace("%name%", chunkName);
                 } else {
-                    title = instance.getLanguage().getMessage("bossbar-visitor-message",player)
+                    title = instance.getLanguage().getMessage("bossbar-visitor-message", player, null)
                             .replace("%player%", player.getName())
                             .replace("%owner%", owner)
                             .replace("%name%", chunkName);

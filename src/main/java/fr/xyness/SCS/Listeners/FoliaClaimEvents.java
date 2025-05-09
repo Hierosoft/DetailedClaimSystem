@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import fr.xyness.SCS.Zone;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -136,7 +137,7 @@ public class FoliaClaimEvents implements Listener {
 		if(cPlayer == null) return;
 		if(cPlayer.getClaimChat()) {
 			event.setCancelled(true);
-			String msg = instance.getLanguage().getMessage("chat-format").replace("%player%",playerName).replace("%message%", PlainTextComponentSerializer.plainText().serialize(event.originalMessage()));
+			String msg = instance.getLanguage().getMessage("chat-format", null).replace("%player%",playerName).replace("%message%", PlainTextComponentSerializer.plainText().serialize(event.originalMessage()));
 			player.sendMessage(msg);
 			for(String p : instance.getMain().getAllMembersWithPlayerParallel(playerName)) {
 				Player target = Bukkit.getPlayer(p);
@@ -154,20 +155,22 @@ public class FoliaClaimEvents implements Listener {
      */
     @EventHandler
     public void onPlayerPickupItem(PlayerAttemptPickupItemEvent event) {
-    	Chunk chunk = event.getItem().getLocation().getChunk();
+        Location itemLocation = event.getItem().getLocation();
+    	Chunk chunk = itemLocation.getChunk();
     	Player player = event.getPlayer();
     	WorldMode mode = instance.getSettings().getWorldMode(player.getWorld().getName());
     	if(instance.getPlayerMain().checkPermPlayer(player, "scs.bypass")) return;
 		if(instance.getMain().checkIfClaimExists(chunk)) {
 			Claim claim = instance.getMain().getClaim(chunk);
+            Zone zone = (claim != null) ? claim.getZoneAt(itemLocation) : null;
 			if(!claim.getPermissionForPlayer("ItemsPickup", player)) {
 				event.setCancelled(true);
-				instance.getMain().sendMessage(player,instance.getLanguage().getMessage("itemspickup"), instance.getSettings().getSetting("protection-message"));
+				instance.getMain().sendMessage(player,instance.getLanguage().getMessage("itemspickup", zone), instance.getSettings().getSetting("protection-message"));
 				return;
 			}
 		} else if (mode == WorldMode.SURVIVAL_REQUIRING_CLAIMS && !instance.getSettings().getSettingSRC("ItemsPickup")) {
         	event.setCancelled(true);
-        	instance.getMain().sendMessage(player,instance.getLanguage().getMessage("itemspickup-mode"), instance.getSettings().getSetting("protection-message"));
+        	instance.getMain().sendMessage(player,instance.getLanguage().getMessage("itemspickup-mode", null), instance.getSettings().getSetting("protection-message"));
         }
     }
     
@@ -257,8 +260,9 @@ public class FoliaClaimEvents implements Listener {
      * @param message The message key to send.
      */
     private void cancelTeleport(PlayerTeleportEvent event, Player player, String message) {
+        // zone: null since you can only teleport to a Claim not a Zone
     	instance.executeAsyncLater(() -> instance.getMain().teleportPlayer(player, event.getFrom()), 50);
-        instance.getMain().sendMessage(player, instance.getLanguage().getMessage(message), instance.getSettings().getSetting("protection-message"));
+        instance.getMain().sendMessage(player, instance.getLanguage().getMessage(message, null), instance.getSettings().getSetting("protection-message"));
     }
 
     /**
@@ -308,15 +312,18 @@ public class FoliaClaimEvents implements Listener {
      */
     private void handleAutoFly(Player player, CPlayer cPlayer, Chunk chunk, String owner) {
     	Claim claim = instance.getMain().getClaim(chunk);
-        if (cPlayer.getClaimAutofly() && (owner.equals(player.getName()) || claim != null && claim.getPermissionForPlayer("Fly", player)) && !instance.isFolia()) {
+        Zone zone = (player != null && claim != null) ? claim.getZoneAt(player): null;
+        Claim permissionScope = claim;
+        if (zone != null) permissionScope = zone;
+        if (cPlayer.getClaimAutofly() && (owner.equals(player.getName()) || permissionScope != null && permissionScope.getPermissionForPlayer("Fly", player)) && !instance.isFolia()) {
             instance.getPlayerMain().activePlayerFly(player);
             if (instance.getSettings().getBooleanSetting("claim-fly-message-auto-fly")) {
-                instance.getMain().sendMessage(player, instance.getLanguage().getMessage("fly-enabled"), "CHAT");
+                instance.getMain().sendMessage(player, instance.getLanguage().getMessage("fly-enabled", zone), "CHAT");
             }
-        } else if (claim != null && !claim.getPermissionForPlayer("Fly", player) && !owner.equals(player.getName()) && cPlayer.getClaimFly() && !instance.isFolia()) {
+        } else if (permissionScope != null && !permissionScope.getPermissionForPlayer("Fly", player) && !owner.equals(player.getName()) && cPlayer.getClaimFly() && !instance.isFolia()) {
             instance.getPlayerMain().removePlayerFly(player);
             if (instance.getSettings().getBooleanSetting("claim-fly-message-auto-fly")) {
-                instance.getMain().sendMessage(player, instance.getLanguage().getMessage("fly-disabled"), "CHAT");
+                instance.getMain().sendMessage(player, instance.getLanguage().getMessage("fly-disabled", zone), "CHAT");
             }
         }
     }
@@ -330,33 +337,34 @@ public class FoliaClaimEvents implements Listener {
      * @param world The world name.
      */
     private void handleAutoDelChunk(Player player, CPlayer cPlayer, Chunk chunk, String world) {
+        // zone: null since doesn't apply to Zone (See delzone. There is no automatic delete for that)
         if (instance.getSettings().getWorldMode(world) == WorldMode.DISABLED) {
-            player.sendMessage(instance.getLanguage().getMessage("autodelchunk-world-disabled").replace("%world%", world));
+            player.sendMessage(instance.getLanguage().getMessage("autodelchunk-world-disabled", null).replace("%world%", world));
             cPlayer.setClaimAuto("");
         } else {
         	Claim claim = cPlayer.getTargetClaimChunk();
         	if(claim == null) return;
             if(claim.getChunks().size() == 1) {
-            	player.sendMessage(instance.getLanguage().getMessage("cannot-remove-only-remaining-chunk"));
+            	player.sendMessage(instance.getLanguage().getMessage("cannot-remove-only-remaining-chunk", null));
             	return;
             }
 			Set<Chunk> chunks = new HashSet<>(claim.getChunks());
 			if(!chunks.contains(chunk)) {
-				player.sendMessage(instance.getLanguage().getMessage("chunk-not-in-claim"));
+				player.sendMessage(instance.getLanguage().getMessage("chunk-not-in-claim", null));
 				return;
 			}
 			chunks.remove(chunk);
             if(!instance.getMain().isAnyChunkAdjacent(chunks, chunk)) {
-            	player.sendMessage(instance.getLanguage().getMessage("one-chunk-must-be-adjacent-delchunk"));
+            	player.sendMessage(instance.getLanguage().getMessage("one-chunk-must-be-adjacent-delchunk", null));
             	return;
             }
             instance.getMain().removeClaimChunk(claim, chunk)
 	        	.thenAccept(success -> {
 	        		if (success) {
 	        			String chunk_string = world+";"+String.valueOf(chunk.getX())+";"+String.valueOf(chunk.getZ());
-	        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("delete-chunk-success").replace("%chunk%", "["+chunk_string+"]").replace("%claim-name%", claim.getName())));
+	        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("delete-chunk-success", null).replace("%chunk%", "["+chunk_string+"]").replace("%claim-name%", claim.getName())));
 	        		} else {
-	        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error-delete-chunk")));
+	        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error-delete-chunk", null)));
 	        		}
 	        	})
 	            .exceptionally(ex -> {
@@ -375,8 +383,9 @@ public class FoliaClaimEvents implements Listener {
      * @param world The world name.
      */
     private void handleAutoAddChunk(Player player, CPlayer cPlayer, Chunk chunk, String world) {
+        // zone: null since doesn't apply (See addzone. There is no automatic add for that).
         if (instance.getSettings().getWorldMode(world) == WorldMode.DISABLED) {
-            player.sendMessage(instance.getLanguage().getMessage("autoaddchunk-world-disabled").replace("%world%", world));
+            player.sendMessage(instance.getLanguage().getMessage("autoaddchunk-world-disabled", null).replace("%world%", world));
             cPlayer.setClaimAuto("");
         } else {
         	String playerName = player.getName();
@@ -386,37 +395,37 @@ public class FoliaClaimEvents implements Listener {
             	Claim claim_target = instance.getMain().getClaim(chunk);
             	if(claim_target.getOwner().equalsIgnoreCase(playerName)) {
             		if(claim_target.equals(claim)) {
-            			player.sendMessage(instance.getLanguage().getMessage("add-chunk-already-in-claim")
+            			player.sendMessage(instance.getLanguage().getMessage("add-chunk-already-in-claim", null)
             					.replace("%claim-name%", claim.getName()));
             			return;
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("add-chunk-already-owner")
+            			player.sendMessage(instance.getLanguage().getMessage("add-chunk-already-owner", null)
             					.replace("%claim-name%", claim.getName())
             					.replace("%claim-name-1%", claim_target.getName()));
             			return;
             		}
             	} else {
-            		player.sendMessage(instance.getLanguage().getMessage("add-chunk-not-owner"));
+            		player.sendMessage(instance.getLanguage().getMessage("add-chunk-not-owner", null));
             		return;
             	}
             }
             Set<Chunk> chunks = new HashSet<>(claim.getChunks());
             if(!cPlayer.canClaimTotalWithNumber(instance.getMain().getAllChunksFromAllClaims(playerName).size()+1)) {
-            	player.sendMessage(instance.getLanguage().getMessage("cant-claim-with-so-many-chunks"));
+            	player.sendMessage(instance.getLanguage().getMessage("cant-claim-with-so-many-chunks", null));
             	return;
             }
             if(!cPlayer.canClaimWithNumber(chunks.size()+1)) {
-            	player.sendMessage(instance.getLanguage().getMessage("cant-claim-with-so-many-chunks"));
+            	player.sendMessage(instance.getLanguage().getMessage("cant-claim-with-so-many-chunks", null));
             	return;
             }
             chunks.add(chunk);
             if(!instance.getMain().areChunksInSameWorld(chunks)) {
-            	player.sendMessage(instance.getLanguage().getMessage("chunks-must-be-from-same-world"));
+            	player.sendMessage(instance.getLanguage().getMessage("chunks-must-be-from-same-world", null));
             	return;
             }
             chunks.remove(chunk);
             if(!instance.getMain().isAnyChunkAdjacent(chunks, chunk)) {
-            	player.sendMessage(instance.getLanguage().getMessage("one-chunk-must-be-adjacent"));
+            	player.sendMessage(instance.getLanguage().getMessage("one-chunk-must-be-adjacent", null));
             	return;
             }
             // Check if there is chunk near
@@ -429,22 +438,22 @@ public class FoliaClaimEvents implements Listener {
                             double balance = instance.getVault().getPlayerBalance(playerName);
 
                             if (balance < price[0]) {
-                            	instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price[0] - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))));
+                            	instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim", null).replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price[0] - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))));
                                 return;
                             }
                             instance.getVault().removePlayerBalance(playerName, price[0]);
-                            if (price[0] > 0) instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("you-paid-chunk").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price[0] * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))));
+                            if (price[0] > 0) instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("you-paid-chunk", null).replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price[0] * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))));
                         }
                         instance.getMain().addClaimChunk(claim, chunk)
                         	.thenAccept(success -> {
                         		if (success) {
-                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("add-chunk-successful")
+                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("add-chunk-successful", null)
                         					.replace("%chunk%", "["+chunk.getWorld().getName()+";"+String.valueOf(chunk.getX())+";"+String.valueOf(chunk.getZ())+"]")
                         					.replace("%claim-name%", claim.getName())));
                         			if (instance.getSettings().getBooleanSetting("claim-particles")) instance.getMain().displayChunks(player, new CustomSet<>(claim.getChunks()), true, false);
                         			return;
                         		} else {
-                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
                         		}
                         	})
                             .exceptionally(ex -> {
@@ -452,7 +461,7 @@ public class FoliaClaimEvents implements Listener {
                                 return null;
                             });
             		} else {
-            			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("cannot-claim-because-claim-near")));
+            			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("cannot-claim-because-claim-near", null)));
                     	return;
             		}
             	})
@@ -473,12 +482,12 @@ public class FoliaClaimEvents implements Listener {
      */
     private void handleAutoUnclaim(Player player, CPlayer cPlayer, Chunk chunk, String world) {
         if (instance.getSettings().getWorldMode(world) == WorldMode.DISABLED) {
-            player.sendMessage(instance.getLanguage().getMessage("autounclaim-world-disabled").replace("%world%", world));
+            player.sendMessage(instance.getLanguage().getMessage("autounclaim-world-disabled", null).replace("%world%", world));
             cPlayer.setClaimAuto("");
         } else {
         	
         	if (!instance.getMain().checkIfClaimExists(chunk)) {
-            	player.sendMessage(instance.getLanguage().getMessage("free-territory"));
+            	player.sendMessage(instance.getLanguage().getMessage("free-territory", null));
                 return;
             }
             
@@ -489,9 +498,9 @@ public class FoliaClaimEvents implements Listener {
             	instance.getMain().deleteClaim(claim)
             		.thenAccept(success -> {
             			if (success) {
-            				player.sendMessage(instance.getLanguage().getMessage("delete-claim-protected-area"));
+            				player.sendMessage(instance.getLanguage().getMessage("delete-claim-protected-area", null));
             			} else {
-            				player.sendMessage(instance.getLanguage().getMessage("error"));
+            				player.sendMessage(instance.getLanguage().getMessage("error", null));
             			}
             		})
                     .exceptionally(ex -> {
@@ -502,16 +511,16 @@ public class FoliaClaimEvents implements Listener {
             }
             
             if (!owner.equals(player.getName())) {
-            	player.sendMessage(instance.getLanguage().getMessage("territory-not-yours"));
+            	player.sendMessage(instance.getLanguage().getMessage("territory-not-yours", null));
                 return;
             }
             
             instance.getMain().deleteClaim(claim)
             	.thenAccept(success -> {
             		if (success) {
-            			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
+            			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success", null));
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("error"));
+            			player.sendMessage(instance.getLanguage().getMessage("error", null));
             		}
             	})
                 .exceptionally(ex -> {
@@ -530,8 +539,9 @@ public class FoliaClaimEvents implements Listener {
      * @param world The world name.
      */
     private void handleAutoClaim(Player player, CPlayer cPlayer, Chunk chunk, String world) {
+        // zone: null since doesn't apply (See addzone. There is no automatic add for that.)
         if (instance.getSettings().getWorldMode(world) == WorldMode.DISABLED) {
-            player.sendMessage(instance.getLanguage().getMessage("autoclaim-world-disabled").replace("%world%", world));
+            player.sendMessage(instance.getLanguage().getMessage("autoclaim-world-disabled", null).replace("%world%", world));
             cPlayer.setClaimAuto("");
         } else {
         	String playerName = player.getName();
@@ -543,13 +553,13 @@ public class FoliaClaimEvents implements Listener {
             
             // Check if there is chunk near
             if(!instance.getMain().isAreaClaimFree(chunk, cPlayer.getClaimDistance(), playerName).join()) {
-            	player.sendMessage(instance.getLanguage().getMessage("cannot-claim-because-claim-near"));
+            	player.sendMessage(instance.getLanguage().getMessage("cannot-claim-because-claim-near", null));
             	return;
             }
             
             // Check if the player can claim
             if (!cPlayer.canClaim()) {
-            	player.sendMessage(instance.getLanguage().getMessage("cant-claim-anymore"));
+            	player.sendMessage(instance.getLanguage().getMessage("cant-claim-anymore", null));
                 return;
             }
             
@@ -559,12 +569,12 @@ public class FoliaClaimEvents implements Listener {
                 double balance = instance.getVault().getPlayerBalance(playerName);
 
                 if (balance < price) {
-                	player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol")));
+                	player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim", null).replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null)));
                     return;
                 }
 
                 instance.getVault().removePlayerBalance(playerName, price);
-                if (price > 0) player.sendMessage(instance.getLanguage().getMessage("you-paid-claim").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol")));
+                if (price > 0) player.sendMessage(instance.getLanguage().getMessage("you-paid-claim", null).replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null)));
             }
             
             // Create claim
@@ -572,10 +582,10 @@ public class FoliaClaimEvents implements Listener {
             	.thenAccept(success -> {
             		if (success) {
             			int remainingClaims = cPlayer.getMaxClaims() - cPlayer.getClaimsCount();
-            			player.sendMessage(instance.getLanguage().getMessage("create-claim-success").replace("%remaining-claims%", instance.getMain().getNumberSeparate(String.valueOf(remainingClaims))));
+            			player.sendMessage(instance.getLanguage().getMessage("create-claim-success", null).replace("%remaining-claims%", instance.getMain().getNumberSeparate(String.valueOf(remainingClaims))));
             			if (instance.getSettings().getBooleanSetting("claim-particles")) instance.getMain().displayChunks(player, new CustomSet<>(Set.of(chunk)), true, false);
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("error"));
+            			player.sendMessage(instance.getLanguage().getMessage("error", null));
             		}
             	})
                 .exceptionally(ex -> {
@@ -595,7 +605,7 @@ public class FoliaClaimEvents implements Listener {
      */
     private void handleAutoMap(Player player, CPlayer cPlayer, Chunk chunk, String world) {
         if (instance.getSettings().getWorldMode(world) == WorldMode.DISABLED) {
-            player.sendMessage(instance.getLanguage().getMessage("automap-world-disabled").replace("%world%", world));
+            player.sendMessage(instance.getLanguage().getMessage("automap-world-disabled", null).replace("%world%", world));
             cPlayer.setClaimAutomap(false);
         } else {
             instance.getMain().getMap(player, chunk, true);
@@ -633,6 +643,7 @@ public class FoliaClaimEvents implements Listener {
      * @param ownerFROM the owner of the chunk the player is leaving.
      */
     private void enterleaveChatMessages(Player player, Chunk to, Chunk from, String ownerTO, String ownerFROM) {
+        // TODO: Add enterleaveZoneChatMessages?
         String playerName = player.getName();
         String toName = instance.getMain().getClaimNameByChunk(to);
         String fromName = instance.getMain().getClaimNameByChunk(from);
@@ -642,20 +653,20 @@ public class FoliaClaimEvents implements Listener {
         	String message;
         	if(claim.getSale() && instance.getSettings().getBooleanSetting("announce-sale.chat")) {
                 message = ownerTO.equals("*")
-                        ? instance.getLanguage().getMessage("enter-protected-area-for-sale-chat")
+                        ? instance.getLanguage().getMessage("enter-protected-area-for-sale-chat", null)
                         		.replace("%name%", toName)
                         		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                        		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
-                        : instance.getLanguage().getMessage("enter-territory-for-sale-chat")
+                        		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
+                        : instance.getLanguage().getMessage("enter-territory-for-sale-chat", null)
                           .replace("%owner%", ownerTO)
                           .replace("%player%", playerName)
                           .replace("%name%", toName)
                   		  .replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                  		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
                 message = ownerTO.equals("*")
-                        ? instance.getLanguage().getMessage("enter-protected-area-chat").replace("%name%", toName)
-                        : instance.getLanguage().getMessage("enter-territory-chat")
+                        ? instance.getLanguage().getMessage("enter-protected-area-chat", null).replace("%name%", toName)
+                        : instance.getLanguage().getMessage("enter-territory-chat", null)
                           .replace("%owner%", ownerTO)
                           .replace("%player%", playerName)
                           .replace("%name%", toName);
@@ -667,8 +678,8 @@ public class FoliaClaimEvents implements Listener {
 
         if (instance.getMain().checkIfClaimExists(from)) {
             String message = ownerFROM.equals("*")
-                    ? instance.getLanguage().getMessage("leave-protected-area").replace("%name%", fromName)
-                    : instance.getLanguage().getMessage("leave-territory")
+                    ? instance.getLanguage().getMessage("leave-protected-area", null).replace("%name%", fromName)
+                    : instance.getLanguage().getMessage("leave-territory", null)
                       .replace("%owner%", ownerFROM)
                       .replace("%player%", playerName)
                       .replace("%name%", fromName);
@@ -696,20 +707,20 @@ public class FoliaClaimEvents implements Listener {
         	String message;
         	if(claim.getSale() && instance.getSettings().getBooleanSetting("announce-sale.actionbar")) {
         		message = ownerTO.equals("*")
-                    ? instance.getLanguage().getMessage("enter-protected-area-for-sale")
+                    ? instance.getLanguage().getMessage("enter-protected-area-for-sale", null)
                     		.replace("%name%", toName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                    		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
-                    : instance.getLanguage().getMessage("enter-territory-for-sale")
+                    		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
+                    : instance.getLanguage().getMessage("enter-territory-for-sale", null)
                       .replace("%owner%", ownerTO)
                       .replace("%player%", playerName)
                       .replace("%name%", toName)
               		  .replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-              		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+              		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
         		message = ownerTO.equals("*")
-                        ? instance.getLanguage().getMessage("enter-protected-area").replace("%name%", toName)
-                        : instance.getLanguage().getMessage("enter-territory")
+                        ? instance.getLanguage().getMessage("enter-protected-area", null).replace("%name%", toName)
+                        : instance.getLanguage().getMessage("enter-territory", null)
                           .replace("%owner%", ownerTO)
                           .replace("%player%", playerName)
                           .replace("%name%", toName);
@@ -720,8 +731,8 @@ public class FoliaClaimEvents implements Listener {
 
         if (instance.getMain().checkIfClaimExists(from)) {
             String message = ownerFROM.equals("*")
-                    ? instance.getLanguage().getMessage("leave-protected-area").replace("%name%", fromName)
-                    : instance.getLanguage().getMessage("leave-territory")
+                    ? instance.getLanguage().getMessage("leave-protected-area", null).replace("%name%", fromName)
+                    : instance.getLanguage().getMessage("leave-territory", null)
                       .replace("%owner%", ownerFROM)
                       .replace("%player%", playerName)
                       .replace("%name%", fromName);
@@ -748,44 +759,44 @@ public class FoliaClaimEvents implements Listener {
         	String toTitleKey;
         	String toSubtitleKey;
         	if(claim.getSale() && instance.getSettings().getBooleanSetting("announce-sale.title")) {
-            	toTitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-for-sale-title")
+            	toTitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-for-sale-title", null)
             	        .replace("%name%", toName)
             	        .replace("%owner%", ownerTO)
             	        .replace("%player%", playerName)
                 		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
-            			: instance.getLanguage().getMessage("enter-territory-for-sale-title")
+                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
+            			: instance.getLanguage().getMessage("enter-territory-for-sale-title", null)
                 	        .replace("%name%", toName)
                 	        .replace("%owner%", ownerTO)
                 	        .replace("%player%", playerName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
-            	toSubtitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-for-sale-subtitle")
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
+            	toSubtitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-for-sale-subtitle", null)
             	        .replace("%name%", toName)
             	        .replace("%owner%", ownerTO)
             	        .replace("%player%", playerName)
                 		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
-            	        : instance.getLanguage().getMessage("enter-territory-for-sale-subtitle")
+                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
+            	        : instance.getLanguage().getMessage("enter-territory-for-sale-subtitle", null)
                 	        .replace("%name%", toName)
                 	        .replace("%owner%", ownerTO)
                 	        .replace("%player%", playerName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
-            	toTitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-title")
+            	toTitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-title", null)
             	        .replace("%name%", toName)
             	        .replace("%owner%", ownerTO)
             	        .replace("%player%", playerName)
-            			: instance.getLanguage().getMessage("enter-territory-title")
+            			: instance.getLanguage().getMessage("enter-territory-title", null)
                 	        .replace("%name%", toName)
                 	        .replace("%owner%", ownerTO)
                 	        .replace("%player%", playerName);;
-            	toSubtitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-subtitle")
+            	toSubtitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-subtitle", null)
             	        .replace("%name%", toName)
             	        .replace("%owner%", ownerTO)
             	        .replace("%player%", playerName)
-            	        : instance.getLanguage().getMessage("enter-territory-subtitle")
+            	        : instance.getLanguage().getMessage("enter-territory-subtitle", null)
                 	        .replace("%name%", toName)
                 	        .replace("%owner%", ownerTO)
                 	        .replace("%player%", playerName);
@@ -796,14 +807,15 @@ public class FoliaClaimEvents implements Listener {
         }
         
         if (instance.getMain().checkIfClaimExists(from)) {
+            // TODO: Show zone enter/leave messages?
         	String fromTitleKey = ownerFROM.equals("*") ? "leave-protected-area-title" : "leave-territory-title";
         	String fromSubtitleKey = ownerFROM.equals("*") ? "leave-protected-area-subtitle" : "leave-territory-subtitle";
 
-        	String title = instance.getLanguage().getMessage(fromTitleKey)
+        	String title = instance.getLanguage().getMessage(fromTitleKey, null)
         	        .replace("%name%", fromName)
         	        .replace("%owner%", ownerFROM)
         	        .replace("%player%", playerName);
-        	String subtitle = instance.getLanguage().getMessage(fromSubtitleKey)
+        	String subtitle = instance.getLanguage().getMessage(fromSubtitleKey, null)
         	        .replace("%name%", fromName)
         	        .replace("%owner%", ownerFROM)
         	        .replace("%player%", playerName);

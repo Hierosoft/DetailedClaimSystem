@@ -3,6 +3,7 @@ package fr.xyness.SCS;
 import com.flowpowered.math.vector.Vector3i;
 // import com.zaxxer.hikari.HikariDataSource; // may vary depending on server? Use javax.sql.Connection instead.
 import fr.xyness.SCS.Types.Claim;
+import fr.xyness.SCS.Types.CustomSet;
 import me.ryanhamshire.GriefPrevention.util.BoundingBox;
 // import org.bukkit.util.BoundingBox; // double (we don't want that)
 import org.bukkit.*;  // Location etc (whatever is available in the Minecraft server implementation)
@@ -13,6 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Represents a subregion within a parent {@link Claim}. Permissions defined in a Zone override the
@@ -55,6 +57,10 @@ public class Zone extends Claim {
 
     public BoundingBox getBoundingBox() {
         return this.boundingBox;
+    }
+
+    public void setBoundingBox(BoundingBox bb) {
+        this.boundingBox = bb;
     }
 
     /**
@@ -310,10 +316,18 @@ public class Zone extends Claim {
     public Zone removeZone(String zoneName) { throw new UnsupportedOperationException("Call is only valid for Claim (superclass)"); }
     /** only valid for Claim, but this is a Zone */
     @Deprecated
-    public void dbDeleteZones(DataSource datasource) { throw new UnsupportedOperationException("Call is only valid for Claim (superclass)"); }
+    public boolean dbDeleteZones(DataSource datasource) { throw new UnsupportedOperationException("Call is only valid for Claim (superclass)"); }
     /** only valid for Claim, but this is a Zone */
     @Deprecated
-    public void dbDeleteZone(DataSource datasource, String zoneName) { throw new UnsupportedOperationException("Call is only valid for Claim (superclass)"); }
+    public boolean dbDeleteZone(DataSource datasource, String zoneName) { throw new UnsupportedOperationException("Call is only valid for Claim (superclass)"); }
+    /** only valid for Claim, but this is a Zone */
+    @Deprecated
+    public boolean dbDeleteZone(Connection connection, String zoneName) { throw new UnsupportedOperationException("Call is only valid for Claim (superclass)"); }
+    @Deprecated
+    public boolean dbUpdateZone(DataSource datasource, String zoneName) { throw new UnsupportedOperationException("Call is only valid for Claim (superclass)"); }
+    /** only valid for Claim, but this is a Zone */
+    @Deprecated
+    public boolean dbUpdateZone(Connection connection, String zoneName) { throw new UnsupportedOperationException("Call is only valid for Claim (superclass)"); }
 
     /** only valid for Claim, but this is a Zone */
     @Deprecated
@@ -392,5 +406,256 @@ public class Zone extends Claim {
 //    public int getAutoID() {
 //        return this.autoID;
 //    }
+
+    public static BoundingBox chunkToBoundingBox(Chunk chunk) {
+        // import GriefPrevention.utils BoundingBox (the int-based one, not the double-based org.bukkit.utils one)
+        return new BoundingBox(
+                chunk.getX() << 4,
+                chunk.getWorld().getMinHeight(),
+                chunk.getZ() << 4,
+                (chunk.getX() << 4) + 15,
+                chunk.getWorld().getMaxHeight() - 1,  // getMaxHeight is exclusive (oddly)!
+                (chunk.getZ() << 4) + 15
+        );
+    }
+
+    public static int minDimensionOf(BoundingBox bb, int idx) {
+        if (idx == 0) {
+            return bb.getMinX();
+        } else if (idx == 1) {
+            return bb.getMinY();
+        } else if (idx == 2) {
+            return bb.getMinZ();
+        }
+        throw new IndexOutOfBoundsException("Expected dimension 0 to 2 for x to z.");
+    }
+
+    public static int maxDimensionOf(BoundingBox bb, int idx) {
+        if (idx == 0) {
+            return bb.getMaxX();
+        } else if (idx == 1) {
+            return bb.getMaxY();
+        } else if (idx == 2) {
+            return bb.getMaxZ();
+        }
+        throw new IndexOutOfBoundsException("Expected dimension 0 to 2 for x to z.");
+    }
+
+    public static BoundingBox subtract(BoundingBox bb1, BoundingBox bb2) {
+        // import GriefPrevention.utils BoundingBox (the int-based one, not the double-based org.bukkit.utils one)
+        BoundingBox intersection = bb1.intersection(bb2);
+        if (intersection == null) {  // they do not intersect, so don't subtract anything
+            return bb1;
+        }
+        if (intersection.equals(bb1)) {
+            return null; // there is nothing left
+        }
+
+        int[] minDims = {bb1.getMinX(), bb1.getMinY(), bb1.getMinZ()};
+        int[] maxDims = {bb1.getMaxX(), bb1.getMaxY(), bb1.getMaxZ()};
+        for (int i = 0; i < 3; i++) {
+            // Now that we are sure there is at least part of bb1 remaining, so for each dimension,
+            // if the min matches (cut off the min side):
+            // keep from intersection max + 1 to bb1 max
+            // else if max matches (cut off the max side):
+            // keep from bb1 min to intersection min -1
+            // else when bb1 is larger and encompasses bb2, a choice has to be made
+            // between which side to keep, so keep the larger portion (See else below)
+            // int minSideThickness = minDimensionOf(intersection, i) - minDimensionOf(bb1, i);
+            // int maxSideThickness = maxDimensionOf(bb1, i) - maxDimensionOf(intersection, i);
+            if ((minDimensionOf(intersection, i) - minDimensionOf(bb1, i)) >= (maxDimensionOf(bb1, i) - maxDimensionOf(intersection, i))) {
+                // (max side could be as small as 0)
+                // Whether bb1 encompasses intersection (identical to bb2 in that dimension in that case) or not,
+                // the min side is thicker (or could be equal if bb1 encompasses intersection), so keep min side:
+                minDims[i] = minDimensionOf(bb1, i);
+                maxDims[i] = minDimensionOf(intersection, i) - 1;  // -1 to exclude overlap
+            } else {
+                // (min side could be as small as 0)
+                // The max side is thicker, so keep max side:
+                minDims[i] = maxDimensionOf(intersection, i) + 1;  // +1 to exclude overlap
+                maxDims[i] = maxDimensionOf(bb1, i);
+            }
+        }
+        BoundingBox result = new BoundingBox(
+                minDims[0],
+                minDims[1],
+                minDims[2],
+                maxDims[0],
+                maxDims[1],
+                maxDims[2]
+        );
+        return result;
+    }
+
+    public static HashSet<Chunk> boundingBoxToChunks(BoundingBox bb, World world) {
+        // shift right is ok in Java (undefined in C):
+        // <https://bukkit.org/threads/get-chunk-coordinates-from-block-coordinates.47497/>
+        int chunkX = bb.getMinX() >> 4;
+        int chunkMaxX = bb.getMaxX() >> 4;
+        int chunkY = bb.getMinY() >> 4;
+        int chunkMaxY = bb.getMaxY() >> 4;
+        HashSet<Chunk> chunks = new HashSet<Chunk>();
+        while (chunkY <= chunkMaxY) {
+            while (chunkX <= chunkMaxX) {
+
+                chunkX++;
+            }
+            chunkY++;
+        }
+        return chunks;
+    }
+
+    @Override
+    public String sqlUpdateDescription() {
+        // return "UPDATE scs_zones SET description = ? WHERE parent_claim_id = ? AND name = ?";
+        return "UPDATE scs_zones SET description = ? WHERE parent_claim_id = ? AND name = ?";
+    }
+    public void prepareUpdate(PreparedStatement preparedStatement, String newValue) throws SQLException {
+        preparedStatement.setString(1, newValue);
+        preparedStatement.setInt(2, parentID);  // uuid.toString()
+        preparedStatement.setString(3, getName());
+    }
+
+
+
+    /**
+     * Method to ban a member from all player's claims.
+     *
+     * @param owner the owner of the claims
+     * @param name the name of the member to be banned
+     * @param claim the parent claim containing the Zones for the bans
+     * @return true if the operation was successful, false otherwise
+     */
+    public static CompletableFuture<Boolean> addAllZoneBan(String owner, String name, SimpleClaimSystem instance, Claim claim) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // Get uuid of the owner and target
+                 // UUID uuid = owner.equals("*") ? ClaimMain.SERVER_UUID : instance.getPlayerMain().getPlayerUUID(owner);
+                 // String uuid_string = uuid.toString();
+                 UUID targetUUID = instance.getPlayerMain().getPlayerUUID(name);
+
+                // Add banned and remove member
+                for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                    entry.getValue().addBan(targetUUID);
+                    entry.getValue().removeMember(targetUUID);
+                }
+
+                // Update database
+                try (Connection connection = instance.getDataSource().getConnection()) {
+                    String updateQuery = "UPDATE scs_zones SET bans = ?, members = ? WHERE parent_claim_id = ? and name = ?";
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
+                        for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                            Zone zone = entry.getValue();
+                            preparedStatement.setString(1, ClaimMain.getBanString(zone));
+                            preparedStatement.setString(2, ClaimMain.getMemberString(zone));
+                            preparedStatement.setInt(3, claim.getId());
+                            preparedStatement.setString(4, zone.getName());
+                            preparedStatement.addBatch();
+                        }
+                        preparedStatement.executeBatch();
+                    }
+                    return true;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Method to unban a player from all owner's claims.
+     *
+     * @param claim the claim whose zones to affect
+     * @param name the name of the player to be unbanned
+     * @return true if the operation was successful, false otherwise
+     */
+    public static CompletableFuture<Boolean> removeAllZoneBan(Claim claim, String name, SimpleClaimSystem instance) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+
+                // Get uuid of the owner and target
+                // UUID uuid = owner.equals("*") ? ClaimMain.SERVER_UUID : instance.getPlayerMain().getPlayerUUID(owner);
+                // String uuid_string = uuid.toString();
+                UUID targetUUID = instance.getPlayerMain().getPlayerUUID(name);
+
+                // playerClaims.computeIfAbsent(uuid, k -> new CustomSet<>()).stream().forEach(claim -> claim.removeBan(targetUUID));
+                for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                    entry.getValue().removeBan(targetUUID);
+                }
+
+                // Updata database
+                try (Connection connection = instance.getDataSource().getConnection()) {
+                    String updateQuery = "UPDATE scs_zones SET bans = ? WHERE parent_claim_id = ? AND name = ?";
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
+                        for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                            Zone zone = entry.getValue();
+                            preparedStatement.setString(1, ClaimMain.getBanString(zone));
+                            preparedStatement.setInt(2, claim.getId());
+                            preparedStatement.setString(3, zone.getName());
+                            preparedStatement.addBatch();
+                        }
+                        preparedStatement.executeBatch();
+                    }
+                    return true;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        });
+    }
+
+
+    /**
+     * Method to remove a member from all owner's claims.
+     *
+     * @param claim the claim whose zones to affect
+     * @param name the name of the member to be removed
+     * @return true if the operation was successful, false otherwise
+     */
+    public static CompletableFuture<Boolean> removeAllZonesMember(Claim claim, String name, SimpleClaimSystem instance) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+
+                // Get uuid of the owner and target
+                // UUID uuid = owner.equals("*") ? SERVER_UUID : instance.getPlayerMain().getPlayerUUID(owner);
+                // String uuid_string = uuid.toString();
+                UUID targetUUID = instance.getPlayerMain().getPlayerUUID(name);
+                // playerClaims.computeIfAbsent(uuid, k -> new CustomSet<>()).stream().forEach(claim -> claim.removeMember(targetUUID));
+                for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                    entry.getValue().removeMember(targetUUID);
+                }
+
+                // Update database
+                try (Connection connection = instance.getDataSource().getConnection()) {
+                    String updateQuery = "UPDATE scs_zones SET Members = ? WHERE parent_claim_id = ? AND name = ?";
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
+                        for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                            Zone zone = entry.getValue();
+                            preparedStatement.setString(1, ClaimMain.getMemberString(zone));
+                            preparedStatement.setInt(2, claim.getId());
+                            preparedStatement.setString(3, zone.getName());
+                            preparedStatement.addBatch();
+                        }
+                        preparedStatement.executeBatch();
+                    }
+                    return true;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        });
+    }
 
 }

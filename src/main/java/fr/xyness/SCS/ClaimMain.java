@@ -44,6 +44,7 @@ import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
+
 public class ClaimMain {
 
 	
@@ -992,11 +993,11 @@ public class ClaimMain {
     }
 
     /**
-     * Checks if the given claim name is already used.
+     * Checks if the given claim name is available.
      *
      * @param ownerId the owner's uuid of the claim
      * @param name  the name of the claim
-     * @return true if the name is already used, false otherwise
+     * @return true if the name is unused, false otherwise
      */
     public boolean checkName(UUID ownerId, String name) {
         return playerClaims.getOrDefault(ownerId, new CustomSet<>()).stream()
@@ -2664,7 +2665,7 @@ public class ClaimMain {
      * @param claim The claim containing the bans.
      * @return A string representation of the bans, or an empty string if there are no bans.
      */
-    public String getBanString(Claim claim) {
+    public static String getBanString(Claim claim) {
         if (claim != null) {
             return claim.getBans().stream()
                     .map(UUID::toString)
@@ -2679,7 +2680,7 @@ public class ClaimMain {
      * @param claim The claim containing the members.
      * @return A string representation of the members, or an empty string if there are no members.
      */
-    public String getMemberString(Claim claim) {
+    public static String getMemberString(Claim claim) {
         if (claim != null) {
             return claim.getMembersString();
         }
@@ -3380,10 +3381,10 @@ public class ClaimMain {
                 UnclaimEvent event = new UnclaimEvent(claim);
                 instance.executeSync(() -> Bukkit.getPluginManager().callEvent(event));
 
-                claim.dbDeleteZones(instance.getDataSource());
-	            
+
 	            // Update database
 	            try (Connection connection = instance.getDataSource().getConnection()) {
+                    claim.dbDeleteZones(connection);
                     // Delete children (areas) first to maintain referential integrity
                     // (Claim id is parent, so after deleting it, there is no way to know
                     // later which areas to delete if there is any failure in calls below).
@@ -3416,19 +3417,31 @@ public class ClaimMain {
     public CompletableFuture<Boolean> deleteAllClaims(String owner) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                
-	            // Get uuid of the owner and update owner claims count
-            	UUID uuid = owner.equals("*") ? SERVER_UUID : instance.getPlayerMain().getPlayerUUID(owner);
-	            if(!owner.equals("*")) {
-	            	Player player = Bukkit.getPlayer(owner);
-		            if (player != null && player.isOnline()) {
-			            CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
-			            cPlayer.setClaimsCount(0);
-		            }
-	            }
+
+                // Get uuid of the owner and update owner claims count
+                UUID uuid = owner.equals("*") ? SERVER_UUID : instance.getPlayerMain().getPlayerUUID(owner);
+                if (!owner.equals("*")) {
+                    Player player = Bukkit.getPlayer(owner);
+                    if (player != null && player.isOnline()) {
+                        CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
+                        cPlayer.setClaimsCount(0);
+                    }
+                }
 
                 // Delete all claims of target player, and remove him from data
-	            CustomSet<Claim> claims = playerClaims.getOrDefault(uuid, new CustomSet<>());
+                CustomSet<Claim> claims = playerClaims.getOrDefault(uuid, new CustomSet<>());
+
+                try (Connection connection = instance.getDataSource().getConnection()) {
+                    // First delete any zones, which require chunks to not be deleted yet
+                    //   (need parent_claim_id to find the claim's zones in the scs_zones table).
+                    playerClaims.computeIfAbsent(uuid, k -> new CustomSet<>()).stream().forEach(claim -> {
+                        Set<Chunk> chunks = claim.getChunks();
+                        claim.dbDeleteZones(connection);
+                    });
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+                }
                 playerClaims.computeIfAbsent(uuid, k -> new CustomSet<>()).stream().forEach(claim -> {
                     Set<Chunk> chunks = claim.getChunks();
                     instance.executeSync(() -> instance.getBossBars().deactivateBossBar(chunks));
@@ -3439,7 +3452,6 @@ public class ClaimMain {
                     updateWeatherChunk(claim, null);
                     updateFlyChunk(claim, null);
                     getMapAutoForChunks(chunks);
-                    claim.dbDeleteZones(instance.getDataSource());
                 });
                 playerClaims.remove(uuid);
                 
@@ -3470,7 +3482,7 @@ public class ClaimMain {
     /**
      * Method to change claim's description.
      *
-     * @param claim the claim
+     * @param claim the Claim or Zone
      * @param description the new description for the claim
      * @return true if the operation was successful, false otherwise
      */
@@ -3478,18 +3490,16 @@ public class ClaimMain {
         return CompletableFuture.supplyAsync(() -> {
             try {
             	// Get data
-            	UUID uuid = claim.getUUID();
+            	// UUID uuid = claim.getUUID();  // UnsupportedOperationException for Zone, use prepareUpdate instead
             	
             	// Update description
 	        	claim.setDescription(description);
 	        	
 	        	// Update database
 	            try (Connection connection = instance.getDataSource().getConnection()) {
-	                String updateQuery = "UPDATE scs_claims_1 SET claim_description = ? WHERE owner_uuid = ? AND claim_name = ?";
+	                String updateQuery = claim.sqlUpdateDescription();
 	                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
-	                    preparedStatement.setString(1, description);
-	                    preparedStatement.setString(2, uuid.toString());
-	                    preparedStatement.setString(3, claim.getName());
+                        claim.prepareUpdate(preparedStatement, description);
 	                    preparedStatement.executeUpdate();
 	                }
 	                return true;
@@ -4029,36 +4039,49 @@ public class ClaimMain {
             	}
             	if(instance.isFolia()) {
             		CompletableFuture<Boolean> future = world.getChunkAtAsync(X_, Z_).thenApply(chunk -> {
-            			
-            			// Remove chunk
-            			Set<Chunk> chunks = new CustomSet<>(claim.getChunks());
-            			if(!chunks.contains(chunk)) return false;
-                    	chunks.remove(chunk);
-                    	claim.setChunks(chunks);
-                    	listClaims.remove(chunk);
+                        try (Connection connection = instance.getDataSource().getConnection()) {
+                            // Remove chunk
+                            Set<Chunk> chunks = new CustomSet<>(claim.getChunks());
+                            if(!chunks.contains(chunk)) return false;
+                            chunks.remove(chunk);
+                            claim.setChunks(chunks);
+                            listClaims.remove(chunk);
+                            ArrayList<String> removeZoneNames = new ArrayList<String>();
+                            for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
+                                Zone zone = entry.getValue();
+                                BoundingBox chunkBB = Zone.chunkToBoundingBox(chunk);
+                                BoundingBox reducedBB = Zone.subtract(zone.getBoundingBox(), chunkBB);
+                                if (reducedBB == null) {
+                                    removeZoneNames.add(entry.getKey());
+                                } else if (reducedBB.equals(zone.getBoundingBox())) {  // unchanged: they do not intersect
+                                    continue;
+                                } else {
+                                    zone.setBoundingBox(reducedBB);
+                                    claim.dbUpdateZone(connection, entry.getKey(), reducedBB);
+                                }
+                            }
+                            for (String key: removeZoneNames) {
+                                claim.removeZone(key);
+                                claim.dbDeleteZone(connection, key);
+                            }
+                            // TODO: Apply removeZoneNames and shrankZoneNames to database
 
-                        for (Map.Entry<String, Zone> entry: claim.getZones().entrySet()) {
-                            Zone zone = entry.getValue();
-                            FIXME // shrink or delete area if necessary, and notify player if either was done
-                        }
-                    	
-                    	// Remove bossbar and maps
-                        if (instance.getSettings().getBooleanSetting("dynmap")) instance.getDynmap().deleteMarker(Set.of(chunk));
-                        if (instance.getSettings().getBooleanSetting("bluemap")) instance.getBluemap().deleteMarker(Set.of(chunk));
-                        if (instance.getSettings().getBooleanSetting("pl3xmap")) instance.getPl3xMap().deleteMarker(Set.of(chunk));
-                    	instance.executeSync(() -> instance.getBossBars().deactivateBossBar(Set.of(chunk)));
-                        updateWeatherChunk(claim, null);
-                        updateFlyChunk(claim, null);
-                        getMapAutoForChunks(chunks);
-        	            
-        	            // Serialize chunks
-        	            String chunksData = serializeChunks(chunks);
-        	            
-        	            // Get uuid of the owner
-        	            UUID uuid = claim.getUUID();
-        	            
-        	            // Update database
-        	            try (Connection connection = instance.getDataSource().getConnection()) {
+                            // Remove bossbar and maps
+                            if (instance.getSettings().getBooleanSetting("dynmap")) instance.getDynmap().deleteMarker(Set.of(chunk));
+                            if (instance.getSettings().getBooleanSetting("bluemap")) instance.getBluemap().deleteMarker(Set.of(chunk));
+                            if (instance.getSettings().getBooleanSetting("pl3xmap")) instance.getPl3xMap().deleteMarker(Set.of(chunk));
+                            instance.executeSync(() -> instance.getBossBars().deactivateBossBar(Set.of(chunk)));
+                            updateWeatherChunk(claim, null);
+                            updateFlyChunk(claim, null);
+                            getMapAutoForChunks(chunks);
+
+                            // Serialize chunks
+                            String chunksData = serializeChunks(chunks);
+
+                            // Get uuid of the owner
+                            UUID uuid = claim.getUUID();
+
+                            // Update database
         	                String updateQuery = "UPDATE scs_claims_1 SET chunks = ? WHERE owner_uuid = ? AND claim_name = ?";
         	                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
         	                    preparedStatement.setString(1, chunksData);
@@ -4215,6 +4238,44 @@ public class ClaimMain {
 	                e.printStackTrace();
 	                return false;
 	            }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        });
+    }
+
+
+    /**
+     * Remove a chunk from a claim
+     *
+     * @param claim The target claim
+     * @param zoneName The name of the Zone to remove
+     * @return true if the process was initiated successfully
+     */
+    public CompletableFuture<Boolean> removeClaimZone(Claim claim, String zoneName){
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Zone zone = claim.getZone(zoneName);
+                // Remove chunk
+                claim.removeZone(zoneName);
+
+                // Remove bossbar and maps
+//                if (instance.getSettings().getBooleanSetting("dynmap")) instance.getDynmap().deleteMarker(Set.of(zone));
+//                if (instance.getSettings().getBooleanSetting("bluemap")) instance.getBluemap().deleteMarker(Set.of(zone));
+//                if (instance.getSettings().getBooleanSetting("pl3xmap")) instance.getPl3xMap().deleteMarker(Set.of(zone));
+//                instance.executeSync(() -> instance.getBossBars().deactivateBossBar(Set.of(zone)));
+                updateWeatherChunk(claim, zone);
+                updateFlyChunk(claim, zone);
+//                getMapAutoForChunks(chunks);
+
+                // Update database
+                try (Connection connection = instance.getDataSource().getConnection()) {
+                    return claim.dbDeleteZone(connection, zoneName);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 return false;
@@ -4729,11 +4790,11 @@ public class ClaimMain {
     	if(help.equalsIgnoreCase("no arg")) {
             // zone: null for generic messages, and for claim messages since zone commands should have string ids selected based on command not circumstances
             if(cmd.equalsIgnoreCase("claim")) {
-            	player.sendMessage(instance.getLanguage().getMessage("available-args", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%args%", String.join(", ", commandArgsClaim)));
+            	player.sendMessage(instance.getLanguage().getMessage("available-args", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%args%", String.join(", ", commandArgsClaim)));
             } else if (cmd.equalsIgnoreCase("scs")) {
-            	player.sendMessage(instance.getLanguage().getMessage("available-args", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%args%", String.join(", ", commandArgsScs)));
+            	player.sendMessage(instance.getLanguage().getMessage("available-args", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%args%", String.join(", ", commandArgsScs)));
             } else if (cmd.equalsIgnoreCase("parea") || cmd.equalsIgnoreCase("protectedarea")) {
-            	player.sendMessage(instance.getLanguage().getMessage("available-args", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%args%", String.join(", ", commandArgsParea)));
+            	player.sendMessage(instance.getLanguage().getMessage("available-args", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%args%", String.join(", ", commandArgsParea)));
             }
             return;
     	}
@@ -4745,11 +4806,11 @@ public class ClaimMain {
             return;
         }
         if(cmd.equalsIgnoreCase("claim")) {
-        	player.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsClaim)));
+        	player.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsClaim)));
         } else if (cmd.equalsIgnoreCase("scs")) {
-        	player.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found").replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsScs)));
+        	player.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsScs)));
         } else if (cmd.equalsIgnoreCase("parea") || cmd.equalsIgnoreCase("protectedarea")) {
-        	player.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found").replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsParea)));
+        	player.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsParea)));
         }
     }
     
@@ -4763,23 +4824,23 @@ public class ClaimMain {
     public void getHelp(CommandSender sender, String help, String cmd) {
     	if(help.equalsIgnoreCase("no arg")) {
             if(cmd.equalsIgnoreCase("claim")) {
-            	sender.sendMessage(instance.getLanguage().getMessage("available-args").replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%args%", String.join(", ", commandArgsClaim)));
+            	sender.sendMessage(instance.getLanguage().getMessage("available-args", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%args%", String.join(", ", commandArgsClaim)));
             } else if (cmd.equalsIgnoreCase("scs")) {
-            	sender.sendMessage(instance.getLanguage().getMessage("available-args").replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%args%", String.join(", ", commandArgsScs)));
+            	sender.sendMessage(instance.getLanguage().getMessage("available-args", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%args%", String.join(", ", commandArgsScs)));
             }
             return;
     	}
-        String help_msg = instance.getLanguage().getMessage("help-command." + cmd + "-" + help.toLowerCase());
+        String help_msg = instance.getLanguage().getMessage("help-command." + cmd + "-" + help.toLowerCase(), null);
         if (!help_msg.isEmpty()) {
-        	sender.sendMessage(instance.getLanguage().getMessage("help-separator"));
+        	sender.sendMessage(instance.getLanguage().getMessage("help-separator", null));
         	sender.sendMessage(help_msg);
-        	sender.sendMessage(instance.getLanguage().getMessage("help-separator"));
+        	sender.sendMessage(instance.getLanguage().getMessage("help-separator", null));
             return;
         }
         if(cmd.equalsIgnoreCase("claim")) {
-        	sender.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found").replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsClaim)));
+        	sender.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsClaim)));
         } else if (cmd.equalsIgnoreCase("scs")) {
-        	sender.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found").replace("%help-separator%", instance.getLanguage().getMessage("help-separator")).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsScs)));
+        	sender.sendMessage(instance.getLanguage().getMessage("sub-arg-not-found", null).replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)).replace("%arg%", help).replace("%args%", String.join(", ", commandArgsScs)));
         }
     }
     
@@ -4833,11 +4894,11 @@ public class ClaimMain {
     private String getDirection(float yaw) {
         yaw = yaw % 360;
         if (yaw < 0) yaw += 360;
-        if (0 <= yaw && yaw < 45) return instance.getLanguage().getMessage("map-direction-south");
-        else if (45 <= yaw && yaw < 135) return instance.getLanguage().getMessage("map-direction-west");
-        else if (135 <= yaw && yaw < 225) return instance.getLanguage().getMessage("map-direction-north");
-        else if (225 <= yaw && yaw < 315) return instance.getLanguage().getMessage("map-direction-east");
-        else if (315 <= yaw && yaw < 360.0) return instance.getLanguage().getMessage("map-direction-south");
+        if (0 <= yaw && yaw < 45) return instance.getLanguage().getMessage("map-direction-south", null);
+        else if (45 <= yaw && yaw < 135) return instance.getLanguage().getMessage("map-direction-west", null);
+        else if (135 <= yaw && yaw < 225) return instance.getLanguage().getMessage("map-direction-north", null);
+        else if (225 <= yaw && yaw < 315) return instance.getLanguage().getMessage("map-direction-east", null);
+        else if (315 <= yaw && yaw < 360.0) return instance.getLanguage().getMessage("map-direction-south", null);
         else return "Unknown";
     }
 
@@ -4870,16 +4931,16 @@ public class ClaimMain {
             boolean isClaimed = checkIfClaimExists(centerChunk);
 
             String name = isClaimed 
-                ? instance.getLanguage().getMessage("map-actual-claim-name-message").replace("%name%", getClaimNameByChunk(centerChunk))
-                : instance.getLanguage().getMessage("map-no-claim-name-message");
-            String coords = instance.getLanguage().getMessage("map-coords-message")
+                ? instance.getLanguage().getMessage("map-actual-claim-name-message", null).replace("%name%", getClaimNameByChunk(centerChunk))
+                : instance.getLanguage().getMessage("map-no-claim-name-message", null);
+            String coords = instance.getLanguage().getMessage("map-coords-message", null)
                 .replace("%coords%", centerX + "," + centerZ)
                 .replace("%direction%", direction);
-            String colorRelationNoClaim = instance.getLanguage().getMessage("map-no-claim-color");
-            String colorCursor = instance.getLanguage().getMessage("map-cursor-color");
-            String symbolNoClaim = instance.getLanguage().getMessage("map-symbol-no-claim");
-            String symbolClaim = instance.getLanguage().getMessage("map-symbol-claim");
-            String mapCursor = instance.getLanguage().getMessage("map-cursor");
+            String colorRelationNoClaim = instance.getLanguage().getMessage("map-no-claim-color", null);
+            String colorCursor = instance.getLanguage().getMessage("map-cursor-color", null);
+            String symbolNoClaim = instance.getLanguage().getMessage("map-symbol-no-claim", null);
+            String symbolClaim = instance.getLanguage().getMessage("map-symbol-claim", null);
+            String mapCursor = instance.getLanguage().getMessage("map-cursor", null);
             World world = player.getWorld();
 
             // Function to get chunk symbols
@@ -4890,13 +4951,13 @@ public class ClaimMain {
                     : colorRelationNoClaim + symbolNoClaim;
 
             Map<Integer, String> legendMap = new HashMap<>();
-            legendMap.put(-3, "  " + name + (isClaimed ? " " + instance.getLanguage().getMessage("map-actual-claim-name-message-owner")
+            legendMap.put(-3, "  " + name + (isClaimed ? " " + instance.getLanguage().getMessage("map-actual-claim-name-message-owner", null)
                 .replace("%owner%", listClaims.get(centerChunk).getOwner()) : ""));
             legendMap.put(-2, "  " + coords);
-            legendMap.put(0, "  " + instance.getLanguage().getMessage("map-legend-you").replace("%cursor-color%", colorCursor));
-            legendMap.put(1, "  " + instance.getLanguage().getMessage("map-legend-free").replace("%no-claim-color%", colorRelationNoClaim));
-            legendMap.put(2, "  " + instance.getLanguage().getMessage("map-legend-yours").replace("%claim-relation-member%", instance.getLanguage().getMessage("map-claim-relation-member")));
-            legendMap.put(3, "  " + instance.getLanguage().getMessage("map-legend-other").replace("%claim-relation-visitor%", instance.getLanguage().getMessage("map-claim-relation-visitor")));
+            legendMap.put(0, "  " + instance.getLanguage().getMessage("map-legend-you", null).replace("%cursor-color%", colorCursor));
+            legendMap.put(1, "  " + instance.getLanguage().getMessage("map-legend-free", null).replace("%no-claim-color%", colorRelationNoClaim));
+            legendMap.put(2, "  " + instance.getLanguage().getMessage("map-legend-yours", null).replace("%claim-relation-member%", instance.getLanguage().getMessage("map-claim-relation-member", null)));
+            legendMap.put(3, "  " + instance.getLanguage().getMessage("map-legend-other", null).replace("%claim-relation-visitor%", instance.getLanguage().getMessage("map-claim-relation-visitor", null)));
 
             StringBuilder mapMessage = new StringBuilder("\n").append(colorRelationNoClaim);
 
@@ -4991,18 +5052,18 @@ public class ClaimMain {
      */
     private int[] adjustDirection(int dx, int dz, String direction) {
         int relX = dx, relZ = dz;
-        if (direction.equalsIgnoreCase(instance.getLanguage().getMessage("map-direction-north"))) return new int[]{relX, relZ};
-        if (direction.equalsIgnoreCase(instance.getLanguage().getMessage("map-direction-south"))) {
+        if (direction.equalsIgnoreCase(instance.getLanguage().getMessage("map-direction-north", null))) return new int[]{relX, relZ};
+        if (direction.equalsIgnoreCase(instance.getLanguage().getMessage("map-direction-south", null))) {
             relX = -dx;
             relZ = -dz;
             return new int[]{relX, relZ};
         }
-        if (direction.equalsIgnoreCase(instance.getLanguage().getMessage("map-direction-east"))) {
+        if (direction.equalsIgnoreCase(instance.getLanguage().getMessage("map-direction-east", null))) {
             relX = -dz;
             relZ = dx;
             return new int[]{relX, relZ};
         }
-        if (direction.equalsIgnoreCase(instance.getLanguage().getMessage("map-direction-west"))) {
+        if (direction.equalsIgnoreCase(instance.getLanguage().getMessage("map-direction-west", null))) {
             relX = dz;
             relZ = -dx;
             return new int[]{relX, relZ};
@@ -5019,8 +5080,8 @@ public class ClaimMain {
      */
     public String getRelation(Player player, Chunk chunk) {
     	Claim claim = listClaims.get(chunk);
-    	if(claim == null) return instance.getLanguage().getMessage("map-claim-relation-visitor");
-    	return checkMembre(claim, player) ? instance.getLanguage().getMessage("map-claim-relation-member") : instance.getLanguage().getMessage("map-claim-relation-visitor");
+    	if(claim == null) return instance.getLanguage().getMessage("map-claim-relation-visitor", null);
+    	return checkMembre(claim, player) ? instance.getLanguage().getMessage("map-claim-relation-member", null) : instance.getLanguage().getMessage("map-claim-relation-visitor", null);
     }
     
     /**
@@ -5209,20 +5270,4 @@ public class ClaimMain {
         return getSelectedBB(player.getUniqueId());
     }
 
-    public static HashSet<Chunk> boundingBoxToChunks(BoundingBox bb, World world) {
-        // shift right is ok in Java (undefined in C):
-        // <https://bukkit.org/threads/get-chunk-coordinates-from-block-coordinates.47497/>
-        int chunkX = bb.getMinX() >> 4;
-        int chunkMaxX = bb.getMaxX() >> 4;
-        int chunkY = bb.getMinY() >> 4;
-        int chunkMaxY = bb.getMaxY() >> 4;
-        HashSet<Chunk> chunks = new HashSet<Chunk>();
-        while (chunkY <= chunkMaxY) {
-            while (chunkX <= chunkMaxX) {
-
-                chunkX++;
-            }
-            chunkY++;
-        }
-        return chunks;
-    }
+}

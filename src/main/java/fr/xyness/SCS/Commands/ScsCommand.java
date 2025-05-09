@@ -388,7 +388,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
             				
             				// Check if the claim exists
                 			if(!instance.getMain().getClaimsNameFromOwner(targetName[0]).contains(args[2])) {
-                				player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found"));
+                				player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found", null));
                 				return;
                 			}
                 			
@@ -455,7 +455,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
         				return;
         			}
         			if(!instance.getMain().getClaimsNameFromOwner(args[2]).contains(args[3])) {
-        				player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found"));
+        				player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found", null));
         				return;
         			}
                 	instance.getOfflinePlayer(args[2], p -> {
@@ -472,7 +472,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
         				return;
         			}
         			if(!instance.getMain().getClaimsNameFromOwner(args[2]).contains(args[3])) {
-        				player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found"));
+        				player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found", null));
         				return;
         			}
         			instance.getOfflinePlayer(args[2], p -> {
@@ -514,7 +514,7 @@ public class ScsCommand implements CommandExecutor, TabCompleter {
             			return;
         			}
         			if(!instance.getMain().getClaimsNameFromOwner(args[2]).contains(args[3])) {
-        				player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found"));
+        				player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found", null));
         				return;
         			}
         			instance.getOfflinePlayer(args[2], p -> {

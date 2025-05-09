@@ -62,7 +62,13 @@ public class ClaimLanguage {
         put("gui-chunks-title", "gui-zones-title"); // no lore
         put("already-banned", "already-banned-from-zone");
         put("add-ban-success", "add-zone-ban-success");
-        // TODO: add bedrock ones!
+        put("itemspickup", "zone-itemspickup");
+        put("access-claim-clickable-removechunk", "access-claim-clickable-removezone");
+        put("to-remove-chunk", "to-remove-zone");
+        put("bedrock-perms-updated", "bedrock-zone-perms-updated");
+        put("claim-set-description-success", "zone-set-description-success");
+        put("unbanned-claim-player", "unbanned-zone-player");
+        // TODO: Add any bedrock equivalents still missing
         // NOTE: The following are not for Zone (See remove chunk/zone instead): unclaim-title unclaim-lore
     }});
 
@@ -83,6 +89,28 @@ public class ClaimLanguage {
         return true;
     }
 
+    public String getMessage(String languageStringId, boolean isZone) {
+        // Do not remap translation string id if zone is null, but if zone is not null but there is no special one in
+        // zoneFields, just use the original languageStringId (Add more to zoneFields if more separate zone strings are added to the
+        // translation yml files).
+        String originalId = languageStringId;
+        String zoneStringId = ClaimLanguage.zoneFields.getOrDefault(languageStringId, languageStringId);
+        if (isZone) {
+            if (!ClaimLanguage.zoneFields.containsKey(languageStringId)) {
+                // throw NoSuchFieldException
+                instance.getLogger().warning( "[ClaimLanguage] No " + languageStringId + " in zoneFields, but was used for a zone. If differs for zone, it needs to be added to zoneFields. Then add the mapped value in zoneFields to langs/ file(s) in repo root (or in src/main/resources/langs in some cases), or it won't be translated!");
+            }
+        }
+        languageStringId = (isZone) ? zoneStringId : languageStringId;
+        String value = lang.getOrDefault(languageStringId, "");
+        if (value.isEmpty()) {
+            String message = "There is no id " + languageStringId;
+            if (isZone) message += " (remapped from id \"" + originalId + "\" using zoneFields since editing a zone)";
+            instance.getLogger().warning(message + " in current language file.");
+        }
+        return value;
+    }
+
     /**
      * Gets a message corresponding to the provided languageStringId.
      *
@@ -90,31 +118,13 @@ public class ClaimLanguage {
      * @return The message corresponding to the languageStringId, or an empty string if the languageStringId is not found.
      */
     public String getMessage(String languageStringId, Zone zone) {
-        // Do not remap translation string id if zone is null, but if zone is not null but there is no special one in
-        // zoneFields, just use the original languageStringId (Add more to zoneFields if more separate zone strings are added to the
-        // translation yml files).
-        String originalId = languageStringId;
-        String zoneStringId = ClaimLanguage.zoneFields.getOrDefault(languageStringId, languageStringId);
         if (zone != null) {
-            if (!ClaimLanguage.zoneFields.containsKey(languageStringId)) {
-                // throw NoSuchFieldException
-                instance.getLogger().warning( "[ClaimLanguage] No " + languageStringId + " in zoneFields, but was used for a zone. If differs for zone, it needs to be added to zoneFields. Then add the mapped value in zoneFields to langs/ file(s) in repo root (or in src/main/resources/langs in some cases), or it won't be translated!");
-            }
-        }
-        languageStringId = (zone != null) ? zoneStringId : languageStringId;
-    	String value = lang.getOrDefault(languageStringId, "");
-        if (value.isEmpty()) {
-            String message = "There is no id " + languageStringId;
-            if (zone != null) message += " (remapped from id \"" + originalId + "\" using zoneFields since editing a zone)";
-            instance.getLogger().warning(message + " in current language file.");
-        }
-        if (zone != null) {
-            return value
+            return getMessage(languageStringId, true)
                     .replace("%zone-name%", zone.getName())
                     .replace("%zone-boundingbox%", zone.getBoundingBox().toString());
         }
         // FIXME: ^ Change to the gettext template way (How does %claim-name% get replaced?) -Poikilos
-        return value;
+        return getMessage(languageStringId, false);
     }
     
     /**
@@ -124,11 +134,16 @@ public class ClaimLanguage {
      * @param target The targeted player's name.
      * @return The message with placeholders replaced, or an empty string if the key is not found.
      */
-    public String getMessage(String key, OfflinePlayer target, Zone zone) {
+    public String getMessage(String key, OfflinePlayer target, boolean isZone) {
         if (!instance.getSettings().getBooleanSetting("placeholderapi") || !lang.containsKey(key)) {
             return lang.get(key);
         }
         return PlaceholderAPI.setPlaceholders(target, lang.get(key));
     }
-
+    public String getMessage(String key, OfflinePlayer target, Zone zone) {
+        if (zone != null) {
+            return getMessage(key, target, true);
+        }
+        return getMessage(key, target, false);
+    }
 }

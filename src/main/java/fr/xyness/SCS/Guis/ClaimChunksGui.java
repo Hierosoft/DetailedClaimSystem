@@ -61,7 +61,7 @@ public class ClaimChunksGui implements InventoryHolder {
     	this.instance = instance;
     	this.player = player;
 
-    	Zone zone = claim.getZoneOfPlayerGUI(player);
+    	Zone zone = claim.getZoneAt(player);
 
     	// Get title
     	GuiSettings guiSettings = ClaimGuis.getGuiSettings("chunks", zone);
@@ -153,11 +153,19 @@ public class ClaimChunksGui implements InventoryHolder {
     		}
 	        
 	        // Prepare template lore
-	        List<String> lore = new ArrayList<>(instance.getGuis().getLore(instance.getLanguage().getMessage("chunk-lore")));
-	        lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.delchunk")
-	                ? (claim.getChunks().size() == 1 ? instance.getLanguage().getMessage("cannot-remove-only-remaining-chunk-gui") : instance.getLanguage().getMessage("access-claim-clickable-removechunk"))
-	                : instance.getLanguage().getMessage("gui-button-no-permission") + instance.getLanguage().getMessage("to-remove-chunk"));
-	        
+	        List<String> lore = new ArrayList<>(instance.getGuis().getLore(instance.getLanguage().getMessage("chunk-lore", zone)));
+			if (zone != null) {
+				// zone: null for permission error since it is generic
+				// TODO: Add delzone permission?
+				lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.delchunk")
+						? instance.getLanguage().getMessage("access-claim-clickable-removechunk", zone)
+						: instance.getLanguage().getMessage("gui-button-no-permission", null) + instance.getLanguage().getMessage("to-remove-chunk", zone));
+			}
+			else {
+				lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.delchunk")
+						? (claim.getChunks().size() == 1 ? instance.getLanguage().getMessage("cannot-remove-only-remaining-chunk-gui", null) : instance.getLanguage().getMessage("access-claim-clickable-removechunk", null))
+						: instance.getLanguage().getMessage("gui-button-no-permission", null) + instance.getLanguage().getMessage("to-remove-chunk", null));
+	        }
 	        // Prepare count
 	        int startItem = (page - 1) * max;
 	        int i = guiSettings.getStartSlot();
@@ -173,13 +181,17 @@ public class ClaimChunksGui implements InventoryHolder {
 	            if (i == guiSettings.getEndSlot()+1) break;
 	
 	            // Add the chunk to map string for gui clicking
-	            cPlayer.addMapString(i, String.valueOf(chunk.getWorld().getName()+";"+chunk.getX()+";"+chunk.getZ()));
-	            
+	            cPlayer.addMapString(i, Claim.machineReadableChunk(chunk));
+	            String zoneName = (zone != null) ? zone.getName() : "(no zone)";
+				String zoneBBString = (zone != null) ? Zone.serializeBoundingBox(zone.getBoundingBox()) : "(no boundingbox)";
 	            // Prepare title for current chunk
-	            String title = instance.getLanguage().getMessage("chunk-title").replace("%coords%", String.valueOf(chunk.getWorld().getName()+", X:"+chunk.getX()+", Z:"+chunk.getZ()));
+	            String title = instance.getLanguage().getMessage("chunk-title", zone)
+						.replace("%coords%", Claim.humanReadableChunk(chunk))
+						.replace("%zone-name%", zoneName)
+						.replace("zone-boundingbox", zoneBBString);
 	            
 	            // Set chunk item
-	            ItemStack item = new ItemStack(Material.RED_MUSHROOM_BLOCK, 1);
+	            ItemStack item = new ItemStack((zone != null) ? Material.YELLOW_WOOL : Material.RED_MUSHROOM_BLOCK, 1);
 	            ItemMeta meta = item.getItemMeta();
 	            meta.setDisplayName(title);
 	            meta.setLore(lore);

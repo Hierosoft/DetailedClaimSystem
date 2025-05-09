@@ -61,7 +61,7 @@ public class ClaimMembersGui implements InventoryHolder {
     public ClaimMembersGui(Player player, Claim claim, int page, SimpleClaimSystem instance) {
     	this.instance = instance;
     	this.player = player;
-    	Zone zone = claim.getZoneOfPlayerGUI(player);
+    	Zone zone = claim.getZoneAt(player);
     	// Get title
     	GuiSettings guiSettings = ClaimGuis.getGuiSettings("members", zone);
 		// NOTE: ^ Fields in members.yml may be different based on zoneFields--for example:
@@ -108,7 +108,7 @@ public class ClaimMembersGui implements InventoryHolder {
 	    	String playerName = player.getName();
 	        CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
 	        // Get claim data
-	        Set<String> members = instance.getMain().convertUUIDSetToStringSet(claim.getMembers());
+	        Set<String> members = instance.getMain().convertUUIDSetToStringSet((zone != null ? zone : claim).getMembers());
 	        List<String> membersList = new ArrayList<>(members);
 	        Collections.sort(membersList, (member1, member2) -> member1.compareTo(member2));
 	        members = new LinkedHashSet<>(membersList);
@@ -171,7 +171,7 @@ public class ClaimMembersGui implements InventoryHolder {
 	        
 	        // Prepare lore
 	        List<String> lore = new ArrayList<>(instance.getGuis().getLore(instance.getLanguage().getMessage("territory-access-lore-new", zone)));
-	        lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.remove", zone)
+	        lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.remove")
 	                ? instance.getLanguage().getMessage("access-claim-clickable-removemember", zone)
 	                : instance.getLanguage().getMessage("gui-button-no-permission", zone) + instance.getLanguage().getMessage("to-remove-member", zone));
 	        

@@ -1050,13 +1050,13 @@ public class ClaimGuiEvents implements Listener {
             				.thenAccept(success -> {
             					if (success) {
             						instance.executeEntitySync(player, () -> {
-    	            	                player.sendMessage(instance.getLanguage().getMessage("buy-claim-success").replace("%name%", old_name).replace("%price%", String.valueOf(price)).replace("%owner%", old_owner.equalsIgnoreCase("*") ? "protected areas" : old_owner).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol")));
+    	            	                player.sendMessage(instance.getLanguage().getMessage("buy-claim-success").replace("%name%", old_name).replace("%price%", String.valueOf(price)).replace("%owner%", old_owner.equalsIgnoreCase("*") ? "protected areas" : old_owner).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null)));
     	            	                player.closeInventory();
             						});
 	            	                if(!old_owner.equalsIgnoreCase("*")) {
 	                	                Player target = Bukkit.getPlayer(old_owner);
 	                	                if(target != null && target.isOnline()) {
-	                	                	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("claim-was-sold").replace("%name%", old_name).replace("%buyer%", playerName).replace("%price%", String.valueOf(price)).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))));
+	                	                	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("claim-was-sold").replace("%name%", old_name).replace("%buyer%", playerName).replace("%price%", String.valueOf(price)).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))));
 	                	                }
 	            	                }
             					} else {

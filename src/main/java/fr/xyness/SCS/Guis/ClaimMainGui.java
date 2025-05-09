@@ -55,7 +55,7 @@ public class ClaimMainGui implements InventoryHolder {
     public ClaimMainGui(Player player, Claim claim, SimpleClaimSystem instance) {
     	this.instance = instance;
     	this.player = player;
-		Zone zone = claim.getZoneOfPlayerGUI(player);
+		Zone zone = claim.getZoneAt(player);
     	// Get title
     	GuiSettings guiSettings = ClaimGuis.getGuiSettings("main", zone);
     	String title = guiSettings.getTitle()
@@ -111,18 +111,18 @@ public class ClaimMainGui implements InventoryHolder {
     			if(key.equals("Info")) {
     				title = title.replace("%description%", claim.getDescription())
     			    		.replace("%claim-name%", claim.getName())
-    			    		.replace("%sale-status%", claim.getSale() ? (instance.getLanguage().getMessage("claim-info-lore-sale-status-true")
+    			    		.replace("%sale-status%", claim.getSale() ? (instance.getLanguage().getMessage("claim-info-lore-sale-status-true", null)
     							.replace("%price%", instance.getMain().getNumberSeparate(String.valueOf(claim.getPrice())))
-    							.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))) : instance.getLanguage().getMessage("claim-info-lore-sale-status-false"))
+    							.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))) : instance.getLanguage().getMessage("claim-info-lore-sale-status-false", null))
 							.replace("%chunks-count%", instance.getMain().getNumberSeparate(String.valueOf(claim.getChunks().size())))
 							.replace("%zones-count%", instance.getMain().getNumberSeparate(String.valueOf(claim.getZones().size())))
     						.replace("%members-count%", instance.getMain().getNumberSeparate(String.valueOf(claim.getMembers().size())))
     						.replace("%bans-count%", instance.getMain().getNumberSeparate(String.valueOf(claim.getBans().size())));
     				lore_string = lore_string.replace("%description%", claim.getDescription())
     			    		.replace("%claim-name%", claim.getName())
-    			    		.replace("%sale-status%", claim.getSale() ? (instance.getLanguage().getMessage("claim-info-lore-sale-status-true")
+    			    		.replace("%sale-status%", claim.getSale() ? (instance.getLanguage().getMessage("claim-info-lore-sale-status-true", null)
     							.replace("%price%", instance.getMain().getNumberSeparate(String.valueOf(claim.getPrice())))
-    							.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))) : instance.getLanguage().getMessage("claim-info-lore-sale-status-false"))
+    							.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))) : instance.getLanguage().getMessage("claim-info-lore-sale-status-false", null))
 							.replace("%chunks-count%", instance.getMain().getNumberSeparate(String.valueOf(claim.getChunks().size())))
 							.replace("%zones-count%", instance.getMain().getNumberSeparate(String.valueOf(claim.getZones().size())))
     						.replace("%members-count%", instance.getMain().getNumberSeparate(String.valueOf(claim.getMembers().size())))

@@ -117,7 +117,7 @@ public class ClaimsGui implements InventoryHolder {
 			cPlayer.clearGuiZone();  // null for claims scope
 	
 	        // Set bottom items
-    		GuiSettings guiSettings = ClaimGuis.getGuiSettings("claims");
+    		GuiSettings guiSettings = ClaimGuis.getGuiSettings("claims", null);
 	        int max = guiSettings.getEndSlot() - guiSettings.getStartSlot();
 
 			// zone: null in claims scope
@@ -140,8 +140,8 @@ public class ClaimsGui implements InventoryHolder {
     			}
     			if (key.equals("Filter")) {
     	            lore_string = lore_string
-    	                    .replaceAll("%status_color_" + getStatusIndex(filter) + "%", instance.getLanguage().getMessage("status_color_active_filter"))
-    	                    .replaceAll("%status_color_[^" + getStatusIndex(filter) + "]%", instance.getLanguage().getMessage("status_color_inactive_filter"));
+    	                    .replaceAll("%status_color_" + getStatusIndex(filter) + "%", instance.getLanguage().getMessage("status_color_active_filter", null))
+    	                    .replaceAll("%status_color_[^" + getStatusIndex(filter) + "]%", instance.getLanguage().getMessage("status_color_inactive_filter", null));
     			}
     			List<String> lore = instance.getGuis().getLore(lore_string);
     			if(title.isBlank()) title = null;
@@ -161,7 +161,7 @@ public class ClaimsGui implements InventoryHolder {
     		}
 	
 	        // Prepare lore
-	        List<String> loreTemplate = instance.getGuis().getLore(instance.getLanguage().getMessage("owner-claim-lore"));
+	        List<String> loreTemplate = instance.getGuis().getLore(instance.getLanguage().getMessage("owner-claim-lore", null));
 	        
 	        // Prepare count
 	        int startItem = (page - 1) * max;
@@ -187,7 +187,7 @@ public class ClaimsGui implements InventoryHolder {
 	            	String l = s.replace("%claim-amount%", instance.getMain().getNumberSeparate(String.valueOf(claimAmount)));
 	            	lore.add(l);
 	            });
-	            lore.add(instance.getLanguage().getMessage("owner-claim-access"));
+	            lore.add(instance.getLanguage().getMessage("owner-claim-access", null));
 	            
 	            // Set owner head item
 	        	ItemStack item = instance.getPlayerMain().getPlayerHead(owner);
@@ -196,12 +196,12 @@ public class ClaimsGui implements InventoryHolder {
 	        	}
 	        	if(item.hasItemMeta() && item.getItemMeta() != null) {
 	        		if(item.getItemMeta() instanceof SkullMeta meta) {
-	    	            meta.setDisplayName(instance.getLanguage().getMessage("owner-claim-title").replace("%owner%", owner));
+	    	            meta.setDisplayName(instance.getLanguage().getMessage("owner-claim-title", null).replace("%owner%", owner));
 	    	            meta.setLore(lore);
 	    	            item.setItemMeta(meta);
 	        		} else {
 	        			ItemMeta meta = item.getItemMeta();
-	    	            meta.setDisplayName(instance.getLanguage().getMessage("owner-claim-title").replace("%owner%", owner));
+	    	            meta.setDisplayName(instance.getLanguage().getMessage("owner-claim-title", null).replace("%owner%", owner));
 	    	            meta.setLore(lore);
 	    	            item.setItemMeta(meta);
 	        		}
