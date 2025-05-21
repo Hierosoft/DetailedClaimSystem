@@ -6,5 +6,5 @@ package fr.xyness.SCS.Types;
 public enum WorldMode {
     SURVIVAL,
     SURVIVAL_REQUIRING_CLAIMS,
-    DISABLED;
+    DISABLED
 }

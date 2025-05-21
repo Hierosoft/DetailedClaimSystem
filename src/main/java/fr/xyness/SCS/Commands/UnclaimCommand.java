@@ -131,18 +131,18 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
         }
         
         if (args.length > 1) {
-        	player.sendMessage(instance.getLanguage().getMessage("help-unclaim").replace("%help-separator%", instance.getLanguage().getMessage("help-separator")));
+        	player.sendMessage(instance.getLanguage().getMessage("help-unclaim").replace("%help-separator%", instance.getLanguage().getMessage("help-separator", null)));
             return false;
         }
         
         if (args.length == 1) {
         	if (args[0].equals("*")) {
                 if (!instance.getPlayerMain().checkPermPlayer(player, "scs.command.unclaim.all")) {
-                	player.sendMessage(instance.getLanguage().getMessage("cmd-no-permission"));
+                	player.sendMessage(instance.getLanguage().getMessage("cmd-no-permission", null));
                     return false;
                 }
                 if (cPlayer.getClaimsCount() == 0) {
-                	player.sendMessage(instance.getLanguage().getMessage("player-has-no-claim"));
+                	player.sendMessage(instance.getLanguage().getMessage("player-has-no-claim", null));
                     return false;
                 }
                 if (instance.getSettings().getBooleanSetting("claim-confirmation")) {
@@ -153,7 +153,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
 	                    		if (success) {
 	                    			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
 	                    		} else {
-	                    			player.sendMessage(instance.getLanguage().getMessage("error"));
+	                    			player.sendMessage(instance.getLanguage().getMessage("error", null));
 	                    		}
 	                    	})
 	                        .exceptionally(ex -> {
@@ -164,11 +164,11 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
                         isOnDelete.put(player,"*");
                         if(instance.getSettings().getBooleanSetting("floodgate")) {
                         	if(FloodgateApi.getInstance().isFloodgatePlayer(player.getUniqueId())) {
-                        		new BUnclaimConfirmationGui(player,instance);
+                        		new BUnclaimConfirmationGui(player, instance);
                         		return true;
                         	}
                         }
-                        new UnclaimConfirmationGui(player,instance);
+                        new UnclaimConfirmationGui(player, instance);
                     }
                 } else {
                     instance.getMain().deleteAllClaims(playerName)
@@ -176,7 +176,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
                 		if (success) {
                 			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
                 		} else {
-                			player.sendMessage(instance.getLanguage().getMessage("error"));
+                			player.sendMessage(instance.getLanguage().getMessage("error", null));
                 		}
                 	})
                     .exceptionally(ex -> {
@@ -188,7 +188,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
             }
             Claim claim = instance.getMain().getClaimByName(args[0], player);
             if (claim == null) {
-            	player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found"));
+            	player.sendMessage(instance.getLanguage().getMessage("claim-player-not-found", null));
                 return false;
             }
             if (instance.getSettings().getBooleanSetting("claim-confirmation")) {
@@ -199,7 +199,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
     	            		if (success) {
     	            			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
     	            		} else {
-    	            			player.sendMessage(instance.getLanguage().getMessage("error"));
+    	            			player.sendMessage(instance.getLanguage().getMessage("error", null));
     	            		}
     	            	})
     	                .exceptionally(ex -> {
@@ -210,11 +210,11 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
                     isOnDelete.put(player,claim.getName());
                     if(instance.getSettings().getBooleanSetting("floodgate")) {
                     	if(FloodgateApi.getInstance().isFloodgatePlayer(player.getUniqueId())) {
-                    		new BUnclaimConfirmationGui(player,instance);
+                    		new BUnclaimConfirmationGui(player, instance);
                     		return true;
                     	}
                     }
-                    new UnclaimConfirmationGui(player,instance);
+                    new UnclaimConfirmationGui(player, instance);
                 }
             } else {
                 instance.getMain().deleteClaim(claim)
@@ -222,7 +222,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
 	            		if (success) {
 	            			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
 	            		} else {
-	            			player.sendMessage(instance.getLanguage().getMessage("error"));
+	            			player.sendMessage(instance.getLanguage().getMessage("error", null));
 	            		}
 	            	})
 	                .exceptionally(ex -> {
@@ -249,7 +249,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
         			if (success) {
         				player.sendMessage(instance.getLanguage().getMessage("delete-claim-protected-area"));
         			} else {
-        				player.sendMessage(instance.getLanguage().getMessage("error"));
+        				player.sendMessage(instance.getLanguage().getMessage("error", null));
         			}
         		})
                 .exceptionally(ex -> {
@@ -272,7 +272,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
 	            		if (success) {
 	            			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
 	            		} else {
-	            			player.sendMessage(instance.getLanguage().getMessage("error"));
+	            			player.sendMessage(instance.getLanguage().getMessage("error", null));
 	            		}
 	            	})
 	                .exceptionally(ex -> {
@@ -283,11 +283,11 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
                 isOnDelete.put(player,claim.getName());
                 if(instance.getSettings().getBooleanSetting("floodgate")) {
                 	if(FloodgateApi.getInstance().isFloodgatePlayer(player.getUniqueId())) {
-                		new BUnclaimConfirmationGui(player,instance);
+                		new BUnclaimConfirmationGui(player, instance);
                 		return true;
                 	}
                 }
-                new UnclaimConfirmationGui(player,instance);
+                new UnclaimConfirmationGui(player, instance);
             }
         } else {
             instance.getMain().deleteClaim(claim)
@@ -295,7 +295,7 @@ public class UnclaimCommand implements CommandExecutor, TabCompleter {
         		if (success) {
         			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
         		} else {
-        			player.sendMessage(instance.getLanguage().getMessage("error"));
+        			player.sendMessage(instance.getLanguage().getMessage("error", null));
         		}
         	})
             .exceptionally(ex -> {

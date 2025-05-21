@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import fr.xyness.SCS.Zone;
 import org.bukkit.entity.Player;
 import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.floodgate.api.FloodgateApi;
@@ -14,7 +15,7 @@ import fr.xyness.SCS.Types.CPlayer;
 import fr.xyness.SCS.Types.Claim;
 
 /**
- * Class representing the Claim GUI.
+ * Claim Settings GUI.
  */
 public class BClaimSettingsGui {
 
@@ -43,17 +44,18 @@ public class BClaimSettingsGui {
      * @param claim  The claim for which the GUI is displayed.
      * @param instance The instance of the SimpleClaimSystem plugin.
      */
-    public BClaimSettingsGui(Player player, Claim claim, SimpleClaimSystem instance) {
+    public BClaimSettingsGui(Player player, Claim claim, SimpleClaimSystem instance, Zone zone) {
     	this.instance = instance;
     	this.floodgatePlayer = FloodgateApi.getInstance().getPlayer(player.getUniqueId());
-    	
     	// Get CPlayer
     	CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
     	if(cPlayer == null) return;
     	
         // Création d'un formulaire simple
+		// Creating a simple form
+		// zone: null since only applies to claim not chunk/zone
     	CustomForm.Builder form = CustomForm.builder()
-	        .title(instance.getLanguage().getMessage("bedrock-gui-settings-title")
+	        .title(instance.getLanguage().getMessage("bedrock-gui-settings-title", zone)
 	    			.replace("%name%", claim.getName()))
 	        .validResultHandler(response -> {
 	        	Map<String,LinkedHashMap<String,Boolean>> perms = new HashMap<>();
@@ -78,13 +80,14 @@ public class BClaimSettingsGui {
 	        		perms.get("natural").put(key, response.asToggle(i));
 	        		i++;
 	        	}
-	        	String message = instance.getLanguage().getMessage("bedrock-perms-updated").replace("%claim-name%", claim.getName());
-            	this.instance.getMain().updatePermsBedrock(claim, perms)
+	        	String message = instance.getLanguage().getMessage("bedrock-perms-updated", zone).replace("%claim-name%", claim.getName());
+				String zoneName = (zone != null) ? zone.getName() : null;
+            	this.instance.getMain().updatePermsBedrock(claim, perms, zoneName)
 	        		.thenAccept(success -> {
 	        			if (success) {
 	        				instance.executeEntitySync(player, () -> player.sendMessage(message));
 	        			} else {
-	        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+	        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
 	        			}
 	        		})
 	                .exceptionally(ex -> {
@@ -96,34 +99,36 @@ public class BClaimSettingsGui {
         
         // Add buttons
     	form.label("-");
-    	form.label(instance.getLanguage().getMessage("bedrock-gui-settings-role1"));
+    	form.label(instance.getLanguage().getMessage("bedrock-gui-settings-role1", null));
     	form.label("-");
         // Set settings items
         for (String key : instance.getGuis().getPerms("visitors")) {
         	if(!instance.getSettings().isEnabled(key) || !checkPermPerm(player,key)) continue;
             // Check setting status
             boolean permission = claim.getPermission(key,"visitors");
-            form.toggle(instance.getLanguage().getMessage("bedrock-" + key.toLowerCase() + "-title"), permission);
+			// zone: null since generic such as bedrock-build-title: "Build"
+            form.toggle(instance.getLanguage().getMessage("bedrock-" + key.toLowerCase() + "-title", null), permission);
         }
         form.label("-");
-    	form.label(instance.getLanguage().getMessage("bedrock-gui-settings-role2"));
+    	form.label(instance.getLanguage().getMessage("bedrock-gui-settings-role2", null));
     	form.label("-");
         // Set settings items
         for (String key : instance.getGuis().getPerms("members")) {
         	if(!instance.getSettings().isEnabled(key) || !checkPermPerm(player,key)) continue;
             // Check setting status
             boolean permission = claim.getPermission(key,"members");
-            form.toggle(instance.getLanguage().getMessage("bedrock-" + key.toLowerCase() + "-title"), permission);
+            form.toggle(instance.getLanguage().getMessage("bedrock-" + key.toLowerCase() + "-title", null), permission);
         }
         form.label("-");
-    	form.label(instance.getLanguage().getMessage("bedrock-gui-settings-role3"));
+    	form.label(instance.getLanguage().getMessage("bedrock-gui-settings-role3", null));
     	form.label("-");
     	// Set settings items
         for (String key : instance.getGuis().getPerms("natural")) {
         	if(!instance.getSettings().isEnabled(key) || !checkPermPerm(player,key)) continue;
             // Check setting status
             boolean permission = claim.getPermission(key,"natural");
-            form.toggle(instance.getLanguage().getMessage("bedrock-" + key.toLowerCase() + "-title"), permission);
+			// zone: null since generic such as bedrock-build-title: "Build"
+            form.toggle(instance.getLanguage().getMessage("bedrock-" + key.toLowerCase() + "-title", null), permission);
         }
         floodgatePlayer.sendForm(form.build());
     }

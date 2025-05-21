@@ -18,7 +18,7 @@ import fr.xyness.SCS.Types.GuiSettings;
 import fr.xyness.SCS.Types.GuiSlot;
 
 /**
- * Class representing the Claims GUI.
+ * Claims list GUI.
  */
 public class ClaimsGui implements InventoryHolder {
 	
@@ -36,8 +36,7 @@ public class ClaimsGui implements InventoryHolder {
     
     /** Instance of SimpleClaimSystem */
     private final SimpleClaimSystem instance;
-    
-    
+
     // ******************
     // *  Constructors  *
     // ******************
@@ -54,9 +53,10 @@ public class ClaimsGui implements InventoryHolder {
     public ClaimsGui(Player player, int page, String filter, SimpleClaimSystem instance) {
     	this.instance = instance;
     	this.player = player;
-    	
+
+		// zone: null since listing claims (see chunks/zones screen for zones)
     	// Get title
-    	GuiSettings guiSettings = ClaimGuis.gui_settings.get("claims");
+    	GuiSettings guiSettings = ClaimGuis.getGuiSettings("claims", null);
     	String title = guiSettings.getTitle()
     			.replace("%page%", String.valueOf(page));
     	
@@ -68,7 +68,7 @@ public class ClaimsGui implements InventoryHolder {
         	if (success) {
         		instance.executeEntitySync(player, () -> player.openInventory(inv));
         	} else {
-        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         	}
         })
         .exceptionally(ex -> {
@@ -91,7 +91,7 @@ public class ClaimsGui implements InventoryHolder {
      * @return A CompletableFuture with a boolean to check if the gui is correctly initialized.
      */
     private CompletableFuture<Boolean> loadItems(int page, String filter) {
-    	
+    	// List of claims, so no zone
     	return CompletableFuture.supplyAsync(() -> {
     	
 	    	// Get player data
@@ -114,13 +114,15 @@ public class ClaimsGui implements InventoryHolder {
 	        cPlayer.setFilter(filter);
 	        cPlayer.clearMapString();
 	        cPlayer.setGuiPage(page);
+			cPlayer.clearGuiZone();  // null for claims scope
 	
 	        // Set bottom items
-    		GuiSettings guiSettings = ClaimGuis.gui_settings.get("claims");
+    		GuiSettings guiSettings = ClaimGuis.getGuiSettings("claims", null);
 	        int max = guiSettings.getEndSlot() - guiSettings.getStartSlot();
-	        
+
+			// zone: null in claims scope
 	        // Items
-    		List<GuiSlot> slots = new ArrayList<>(ClaimGuis.gui_slots.get("claims"));
+    		List<GuiSlot> slots = new ArrayList<>(ClaimGuis.getGuiSlots(null).get("claims"));
     		for(GuiSlot slot : slots) {
     			int slot_int = slot.getSlot();
     			String key = slot.getKey();
@@ -138,8 +140,8 @@ public class ClaimsGui implements InventoryHolder {
     			}
     			if (key.equals("Filter")) {
     	            lore_string = lore_string
-    	                    .replaceAll("%status_color_" + getStatusIndex(filter) + "%", instance.getLanguage().getMessage("status_color_active_filter"))
-    	                    .replaceAll("%status_color_[^" + getStatusIndex(filter) + "]%", instance.getLanguage().getMessage("status_color_inactive_filter"));
+    	                    .replaceAll("%status_color_" + getStatusIndex(filter) + "%", instance.getLanguage().getMessage("status_color_active_filter", null))
+    	                    .replaceAll("%status_color_[^" + getStatusIndex(filter) + "]%", instance.getLanguage().getMessage("status_color_inactive_filter", null));
     			}
     			List<String> lore = instance.getGuis().getLore(lore_string);
     			if(title.isBlank()) title = null;
@@ -159,7 +161,7 @@ public class ClaimsGui implements InventoryHolder {
     		}
 	
 	        // Prepare lore
-	        List<String> loreTemplate = instance.getGuis().getLore(instance.getLanguage().getMessage("owner-claim-lore"));
+	        List<String> loreTemplate = instance.getGuis().getLore(instance.getLanguage().getMessage("owner-claim-lore", null));
 	        
 	        // Prepare count
 	        int startItem = (page - 1) * max;
@@ -185,7 +187,7 @@ public class ClaimsGui implements InventoryHolder {
 	            	String l = s.replace("%claim-amount%", instance.getMain().getNumberSeparate(String.valueOf(claimAmount)));
 	            	lore.add(l);
 	            });
-	            lore.add(instance.getLanguage().getMessage("owner-claim-access"));
+	            lore.add(instance.getLanguage().getMessage("owner-claim-access", null));
 	            
 	            // Set owner head item
 	        	ItemStack item = instance.getPlayerMain().getPlayerHead(owner);
@@ -194,12 +196,12 @@ public class ClaimsGui implements InventoryHolder {
 	        	}
 	        	if(item.hasItemMeta() && item.getItemMeta() != null) {
 	        		if(item.getItemMeta() instanceof SkullMeta meta) {
-	    	            meta.setDisplayName(instance.getLanguage().getMessage("owner-claim-title").replace("%owner%", owner));
+	    	            meta.setDisplayName(instance.getLanguage().getMessage("owner-claim-title", null).replace("%owner%", owner));
 	    	            meta.setLore(lore);
 	    	            item.setItemMeta(meta);
 	        		} else {
 	        			ItemMeta meta = item.getItemMeta();
-	    	            meta.setDisplayName(instance.getLanguage().getMessage("owner-claim-title").replace("%owner%", owner));
+	    	            meta.setDisplayName(instance.getLanguage().getMessage("owner-claim-title", null).replace("%owner%", owner));
 	    	            meta.setLore(lore);
 	    	            item.setItemMeta(meta);
 	        		}

@@ -36,9 +36,8 @@ public class ClaimDynmap {
     /**
      * Constructor to initialize the ClaimDynmap class with Dynmap and Marker API instances.
      *
-     * @param d  the Dynmap API instance.
-     * @param m  the Marker API instance.
-     * @param m2 the MarkerSet instance.
+	 * @param m2 the MarkerSet instance.
+	 * @param instance the SimpleClaimSystem instance.
      */
     public ClaimDynmap(MarkerSet m2, SimpleClaimSystem instance) {
     	this.markerSet = m2;

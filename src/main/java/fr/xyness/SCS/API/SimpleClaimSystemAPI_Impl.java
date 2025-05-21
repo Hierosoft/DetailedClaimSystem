@@ -239,7 +239,7 @@ public class SimpleClaimSystemAPI_Impl implements SimpleClaimSystemAPI {
 
 	@Override
 	public boolean removeClaimChunk(Claim claim, Chunk chunk) {
-		return instance.getMain().removeClaimChunk(claim, String.valueOf(chunk.getWorld().getName()+";"+chunk.getX()+";"+chunk.getZ())).join();
+		return instance.getMain().removeClaimChunk(claim, Claim.machineReadableChunk(chunk)).join();
 	}
 	
 	// Other methods

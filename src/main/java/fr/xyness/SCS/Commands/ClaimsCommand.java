@@ -60,7 +60,7 @@ public class ClaimsCommand implements CommandExecutor {
     	
         // Check if the sender is a player
         if (!(sender instanceof Player)) {
-        	sender.sendMessage(instance.getLanguage().getMessage("command-only-by-players"));
+        	sender.sendMessage(instance.getLanguage().getMessage("command-only-by-players", null));
             return false;
         }
 

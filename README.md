@@ -1,5 +1,9 @@
-# SimpleClaimSystem
-SimpleClaimSystem is a plugin allowing you to protect your constructions, it works with chunks. The claims are fully configurable (settings, members, bans, name, description, chunks, sales..).
+# DetailedClaimSystem
+DetailedClaimSystem is a Minecraft server (bukkit) plugin allowing you to protect your builds. One or more chunks become a claim, and smaller zones can be defined by the same owner as the claim. The claims are fully configurable (settings, members, bans, name, description, chunks, sales..). Several of these settings can be configured at the zone level.
+
+This is a fork of SimpleClaimSystem. The reason for the fork is to add zones, so please use the default "zones" branch to utilize the fork. "main" is only left here to try to integrate patches from the upstream SimpleClaimSystem. For further information about why it was not integrated with SimpleClaimSystem see:
+- https://github.com/Xyness/SimpleClaimSystem/pull/54
+- For details on what is different, see https://github.com/Hierosoft/DetailedClaimSystem/issues/1
 
 ## Compatibility
 |                      Software                       |    Version    |
@@ -22,9 +26,5 @@ SimpleClaimSystem is a plugin allowing you to protect your constructions, it wor
 
 
 ## Useful links
-### - Wiki ([here](https://xyness.gitbook.io/simpleclaimsystem))
-### - Discord ([here](https://discord.gg/xyness))
-
-
-## bStats
-[![](https://bstats.org/signatures/bukkit/SimpleCLaimSystem.svg)]([https://bstats.org/plugin/bukkit/SimpleClaimSystem/21435](https://bstats.org/plugin/bukkit/SimpleClaimSystem/21435))
+### - SimpleClaimSystem Wiki (mostly the same, so recommended unless a DetailedClaimSystem wiki is made) ([here](https://xyness.gitbook.io/simpleclaimsystem))
+### - ([Hierosoft Discord Server](https://discord.gg/YGMzzan))

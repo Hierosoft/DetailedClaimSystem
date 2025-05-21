@@ -137,8 +137,7 @@ public class SimpleClaimSystem extends JavaPlugin {
     
     /** Console sender */
     private ConsoleCommandSender logger = Bukkit.getConsoleSender();
-    
-    
+
     // ******************
     // *  Main Methods  *
     // ******************
@@ -158,9 +157,9 @@ public class SimpleClaimSystem extends JavaPlugin {
         if (loadConfig(false, Bukkit.getConsoleSender())) {
             info(" ");
             info("SimpleClaimSystem is enabled !");
-            info("Discord for support : https://discord.gg/6sRTGprM95");
+            info("Discord for support : https://discord.gg/YGMzzan");
             info("Documentation : https://xyness.gitbook.io/simpleclaimsystem");
-            info("Developped by Xyness");
+            info("Developed by Hierosoft based on Xyness' SimpleClaimSystem");
         } else {
             Bukkit.getServer().getPluginManager().disablePlugin(this);
         }
@@ -179,9 +178,9 @@ public class SimpleClaimSystem extends JavaPlugin {
         Bukkit.getOnlinePlayers().forEach(p -> claimBossBarInstance.disableBossBar(p));
         info("==========================================================================");
         info("SimpleClaimSystem is disabled !");
-        info("Discord for support : https://discord.gg/6sRTGprM95");
+        info("Discord for support : https://discord.gg/YGMzzan");
         info("Documentation : https://xyness.gitbook.io/simpleclaimsystem");
-        info("Developped by Xyness");
+        info("Developed by Hierosoft based on Xyness' SimpleClaimSystem");
         info("==========================================================================");
     }
     
@@ -215,7 +214,7 @@ public class SimpleClaimSystem extends JavaPlugin {
     	Runnable reloadTask = () -> {
     		
             if (reload) {
-            	sender.sendMessage(getLanguage().getMessage("reload-attempt"));
+            	sender.sendMessage(getLanguage().getMessage("reload-attempt", null));
             	info("==========================================================================");
             }
             
@@ -450,10 +449,12 @@ public class SimpleClaimSystem extends JavaPlugin {
                 saveResource("guis/main.yml", false);
             }
             claimGuisInstance.loadGuiSettings(claimSettingsInstance.getBooleanSetting("itemsadder"));
-            
+
+            String sql_flavor = null;
             // Check database
             String configC = getConfig().getString("database");
             if (configC.equalsIgnoreCase("true")) {
+                sql_flavor = "mysql";
                 // Create data source
                 HikariConfig configH = new HikariConfig();
                 configH.setJdbcUrl("jdbc:mysql://" + getConfig().getString("database-settings.hostname") + ":" + getConfig().getString("database-settings.port") + "/" + getConfig().getString("database-settings.database_name"));
@@ -497,6 +498,8 @@ public class SimpleClaimSystem extends JavaPlugin {
                     		    + "player_head TEXT NOT NULL, "
                     		    + "player_textures TEXT NOT NULL)";
                     		stmt.executeUpdate(sql);
+
+                            stmt.executeUpdate(Zone.createTableSql(sql_flavor));
                     		
                     		sql = "UPDATE scs_claims_1 SET owner_uuid = '" + ClaimMain.SERVER_UUID.toString() + "' WHERE owner_uuid = 'none';";
                     		stmt.executeUpdate(sql);
@@ -516,7 +519,8 @@ public class SimpleClaimSystem extends JavaPlugin {
                     configC = "false";
                 }
             }
-            if (configC.equals("false")) {
+            if (configC.equals("false")) {  // FIXME: Consider changing to else (if so, *must* also make exception above fatal/unhandled instead of regressing to this value)
+                sql_flavor = "sqlite";
                 HikariConfig configH = new HikariConfig();
                 configH.setJdbcUrl("jdbc:sqlite:plugins/SimpleClaimSystem/storage.db");
                 configH.addDataSourceProperty("cachePrepStmts", "true");
@@ -546,6 +550,9 @@ public class SimpleClaimSystem extends JavaPlugin {
                     		    "sale_price DOUBLE NOT NULL DEFAULT 0, " +
                     		    "bans TEXT NOT NULL DEFAULT '')";
                         stmt.executeUpdate(sql);
+
+                        stmt.executeUpdate(Zone.createTableSql(sql_flavor));
+
                     	sql = "CREATE TABLE IF NOT EXISTS scs_players " +
                     		    "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     		    "uuid_server VARCHAR(36) NOT NULL UNIQUE, " +
@@ -554,6 +561,7 @@ public class SimpleClaimSystem extends JavaPlugin {
                     		    "player_head TEXT NOT NULL, " +
                     		    "player_textures TEXT NOT NULL)";
                         stmt.executeUpdate(sql);
+
                 		sql = "UPDATE scs_claims_1 SET owner_uuid = '" + ClaimMain.SERVER_UUID.toString() + "' WHERE owner_uuid = 'none';";
                 		stmt.executeUpdate(sql);
                     } catch (SQLException e) {
@@ -974,8 +982,9 @@ public class SimpleClaimSystem extends JavaPlugin {
             claimBossBarInstance.loadBossbarSettings();
 
             // Load claims system
-            claimInstance.loadClaims();
-            
+            claimInstance.loadClaims("Claim");
+            claimInstance.loadClaims("Zone");
+
             // Load players
             cPlayerMainInstance.loadPlayers();
             
@@ -1020,9 +1029,9 @@ public class SimpleClaimSystem extends JavaPlugin {
             if(reload) {
             	info("==========================================================================");
                 if(status[0]) {
-                	sender.sendMessage(getLanguage().getMessage("reload-complete"));
+                	sender.sendMessage(getLanguage().getMessage("reload-complete", null));
                 } else {
-                	sender.sendMessage(getLanguage().getMessage("reload-not-complete"));
+                	sender.sendMessage(getLanguage().getMessage("reload-not-complete", null));
                 }
             }
     	};
@@ -1047,7 +1056,7 @@ public class SimpleClaimSystem extends JavaPlugin {
     	
     	executeAsync(() -> {
     		
-    		sender.sendMessage(getLanguage().getMessage("config-reload-attempt"));
+    		sender.sendMessage(getLanguage().getMessage("config-reload-attempt", null));
     		info("==========================================================================");
     		
     		// Save and reload config
@@ -1131,10 +1140,11 @@ public class SimpleClaimSystem extends JavaPlugin {
             	defaultSettings.put(key.toLowerCase(), v);
             }
             claimSettingsInstance.setDefaultValues(defaultSettings);
-            
+            String sql_flavor = null;
             // Check database
             String configC = getConfig().getString("database");
             if (configC.equalsIgnoreCase("true")) {
+                sql_flavor = "mysql";
                 // Create data source
                 HikariConfig configH = new HikariConfig();
                 configH.setJdbcUrl("jdbc:mysql://" + getConfig().getString("database-settings.hostname") + ":" + getConfig().getString("database-settings.port") + "/" + getConfig().getString("database-settings.database_name"));
@@ -1169,6 +1179,9 @@ public class SimpleClaimSystem extends JavaPlugin {
                     		    "sale_price DOUBLE NOT NULL DEFAULT 0, " +
                     		    "bans TEXT NOT NULL DEFAULT '')";
                         stmt.executeUpdate(sql);
+
+                        stmt.executeUpdate(Zone.createTableSql(sql_flavor));
+
                     	sql = "CREATE TABLE IF NOT EXISTS scs_players " +
                     		    "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     		    "uuid_server VARCHAR(36) NOT NULL UNIQUE, " +
@@ -1177,6 +1190,7 @@ public class SimpleClaimSystem extends JavaPlugin {
                     		    "player_head TEXT NOT NULL, " +
                     		    "player_textures TEXT NOT NULL)";
                         stmt.executeUpdate(sql);
+
                     } catch (SQLException e) {
                         info(ChatColor.RED + "Error creating tables, using local db.");
                         configC = "false";
@@ -1193,7 +1207,8 @@ public class SimpleClaimSystem extends JavaPlugin {
                     configC = "false";
                 }
             }
-            if (configC.equals("false")) {
+            if (configC.equals("false")) {  // FIXME: Consider changing to else (if so, *must* also make exception above fatal/unhandled instead of regressing to this value)
+                sql_flavor = "sqlite";
                 HikariConfig configH = new HikariConfig();
                 configH.setJdbcUrl("jdbc:sqlite:plugins/SimpleClaimSystem/storage.db");
                 configH.addDataSourceProperty("cachePrepStmts", "true");
@@ -1223,13 +1238,16 @@ public class SimpleClaimSystem extends JavaPlugin {
                     		    "sale_price DOUBLE NOT NULL DEFAULT 0, " +
                     		    "bans TEXT NOT NULL DEFAULT '')";
                         stmt.executeUpdate(sql);
-                    	sql = "CREATE TABLE IF NOT EXISTS scs_players " +
-                    		    "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    		    "uuid_server VARCHAR(36) NOT NULL UNIQUE, " +
-                    		    "uuid_mojang VARCHAR(36) NOT NULL, " + 
-                    		    "player_name VARCHAR(36) NOT NULL, " +
-                    		    "player_head TEXT NOT NULL, " +
-                    		    "player_textures TEXT NOT NULL)";
+
+                        stmt.executeUpdate(Zone.createTableSql(sql_flavor));
+
+                        sql = "CREATE TABLE IF NOT EXISTS scs_players " +
+                                "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                "uuid_server VARCHAR(36) NOT NULL UNIQUE, " +
+                                "uuid_mojang VARCHAR(36) NOT NULL, " +
+                                "player_name VARCHAR(36) NOT NULL, " +
+                                "player_head TEXT NOT NULL, " +
+                                "player_textures TEXT NOT NULL)";
                         stmt.executeUpdate(sql);
                     } catch (SQLException e) {
                         info(ChatColor.RED + "Error creating tables.");
@@ -1626,9 +1644,9 @@ public class SimpleClaimSystem extends JavaPlugin {
             info("==========================================================================");
             
             if(status[0]) {
-            	sender.sendMessage(getLanguage().getMessage("config-reload-complete"));
+            	sender.sendMessage(getLanguage().getMessage("config-reload-complete", null));
             } else {
-            	sender.sendMessage(getLanguage().getMessage("config-reload-not-complete"));
+            	sender.sendMessage(getLanguage().getMessage("config-reload-not-complete", null));
             }
     	});
         
@@ -1799,9 +1817,8 @@ public class SimpleClaimSystem extends JavaPlugin {
     /**
      * Reloads the language file.
      * 
-     * @param plugin The plugin instance
      * @param sender The command sender
-     * @param lang The language file to reload
+     * @param l The language file to reload
      */
     public void reloadLang(CommandSender sender, String l) {
 		String lang = l;
@@ -1849,7 +1866,6 @@ public class SimpleClaimSystem extends JavaPlugin {
     /**
      * Updates the language file with missing keys and removes obsolete keys.
      * 
-     * @param plugin The plugin instance
      * @param file The language file to update
      */
     private void updateLangFileWithMissingKeys(String file) {
@@ -1888,7 +1904,6 @@ public class SimpleClaimSystem extends JavaPlugin {
     /**
      * Updates the configuration file with default values, adding missing keys and removing obsolete ones.
      *
-     * @param plugin The plugin instance
      */
     public void updateConfigWithDefaults() {
         File configFile = new File(getDataFolder(), "config.yml");
@@ -1989,7 +2004,7 @@ public class SimpleClaimSystem extends JavaPlugin {
      */
     public String checkForUpdates() {
         try {
-        	URI uri = URI.create("https://raw.githubusercontent.com/Xyness/SimpleClaimSystem/main/version.yml");
+        	URI uri = URI.create("https://raw.githubusercontent.com/Hierosoft/DetailedClaimSystem/main/version.yml");
             URL url = uri.toURL();
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
@@ -2018,7 +2033,7 @@ public class SimpleClaimSystem extends JavaPlugin {
     public CompletableFuture<String> checkForUpdatesAsync() {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                URI uri = URI.create("https://raw.githubusercontent.com/Xyness/SimpleClaimSystem/main/version.yml");
+                URI uri = URI.create("https://raw.githubusercontent.com/Hierosoft/DetailedClaimSystem/main/version.yml");
                 URL url = uri.toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
@@ -2045,7 +2060,6 @@ public class SimpleClaimSystem extends JavaPlugin {
     /**
      * Checks and saves a resource file if it does not exist.
      * 
-     * @param plugin The plugin instance
      * @param resource The resource file to check and save
      */
     private void checkAndSaveResource(String resource) {

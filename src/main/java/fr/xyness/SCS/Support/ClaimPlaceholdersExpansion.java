@@ -1,5 +1,6 @@
 package fr.xyness.SCS.Support;
 
+import fr.xyness.SCS.Zone;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 
 import java.util.Set;
@@ -81,8 +82,10 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
         if (player == null) return "";
         
         CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
-        
+
         CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+            Zone zone = null;  // only possible to calculate if claim is relevant to the command and claim is accessible.
+            // but usually null since all/most string ids used here are for no-claim scenarios
         	switch (identifier) {
             case "player_claims_count":
                 return String.valueOf(cPlayer.getClaimsCount());
@@ -92,7 +95,7 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
                 if (instance.getMain().checkIfClaimExists(chunk)) {
                     return instance.getMain().getClaimNameByChunk(chunk);
                 }
-                return instance.getLanguage().getMessage("claim_name-if-no-claim");
+                return instance.getLanguage().getMessage("claim_name-if-no-claim", null);
                 
             case "player_max_claims":
                 int maxClaims = cPlayer.getMaxClaims();
@@ -108,7 +111,7 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
                 
             case "player_claim_distance":
                 int distance = cPlayer.getClaimDistance();
-                return distance > 0 ? String.valueOf(distance) : instance.getLanguage().getMessage("claim_distance-if-zero");
+                return distance > 0 ? String.valueOf(distance) : instance.getLanguage().getMessage("claim_distance-if-zero", null);
                 
             case "player_remain_claims":
                 int max = cPlayer.getMaxClaims();
@@ -149,7 +152,8 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
                 	Claim claim = instance.getMain().getClaim(chunk);
                     return claim.getOwner();
                 }
-                return instance.getLanguage().getMessage("claim_owner-if-no-claim");
+                // zone: null since owner applies to Claim not Zone
+                return instance.getLanguage().getMessage("claim_owner-if-no-claim", null);
                 
             case "claim_description":
                 chunk = player.getLocation().getChunk();
@@ -157,14 +161,14 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
                 	Claim claim = instance.getMain().getClaim(chunk);
                     return claim.getDescription();
                 }
-                return instance.getLanguage().getMessage("claim_description-if-no-claim");
+                return instance.getLanguage().getMessage("claim_description-if-no-claim", null);
                 
             case "claim_is_in_sale":
                 chunk = player.getLocation().getChunk();
                 if (instance.getMain().checkIfClaimExists(chunk)) {
                     return String.valueOf(instance.getMain().getClaim(chunk).getSale());
                 }
-                return instance.getLanguage().getMessage("claim_is_in_sale-if-no-claim");
+                return instance.getLanguage().getMessage("claim_is_in_sale-if-no-claim", null);
                 
             case "claim_sale_price":
                 chunk = player.getLocation().getChunk();
@@ -173,9 +177,9 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
                     if (claim.getSale()) {
                         return String.valueOf(claim.getPrice());
                     }
-                    return instance.getLanguage().getMessage("claim_sale_price-if-not-in-sale");
+                    return instance.getLanguage().getMessage("claim_sale_price-if-not-in-sale", null);
                 }
-                return instance.getLanguage().getMessage("claim_sale_price-if-no-claim");
+                return instance.getLanguage().getMessage("claim_sale_price-if-no-claim", null);
                 
             case "claim_members_count":
                 chunk = player.getLocation().getChunk();
@@ -183,7 +187,7 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
                 	Claim claim = instance.getMain().getClaim(chunk);
                     return String.valueOf(claim.getMembers().size());
                 }
-                return instance.getLanguage().getMessage("claim_members_count-if-no-claim");
+                return instance.getLanguage().getMessage("claim_members_count-if-no-claim", null);
                 
             case "claim_members_online":
                 chunk = player.getLocation().getChunk();
@@ -195,7 +199,7 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
                 	        .count();
                 	return String.valueOf(onlineMembers);
                 }
-                return instance.getLanguage().getMessage("claim_members_online-if-no-claim");
+                return instance.getLanguage().getMessage("claim_members_online-if-no-claim", null);
                 
             case "claim_spawn":
                 chunk = player.getLocation().getChunk();
@@ -203,23 +207,24 @@ public class ClaimPlaceholdersExpansion extends PlaceholderExpansion {
                 	Claim claim = instance.getMain().getClaim(chunk);
                     return String.valueOf(instance.getMain().getClaimCoords(claim));
                 }
-                return instance.getLanguage().getMessage("claim_spawn-if-no-claim");
+                return instance.getLanguage().getMessage("claim_spawn-if-no-claim", null);
                 
             default:
+                // TODO: Make new zone_setting_ case?
                 if (identifier.startsWith("claim_setting_")) {
                     chunk = player.getLocation().getChunk();
                     if (instance.getMain().checkIfClaimExists(chunk)) {
                     	Claim claim = instance.getMain().getClaim(chunk);
                         String syntax = identifier.replaceFirst("claim_setting_", "");
                         String[] parts = syntax.split("_");
-                        if(parts.length != 2) return instance.getLanguage().getMessage("status-disabled");
+                        if(parts.length != 2) return instance.getLanguage().getMessage("status-disabled", null);
                         String setting = parts[0];
                         String role = parts[1];
                         return claim.getPermission(setting,role) ? 
-                                instance.getLanguage().getMessage("status-enabled") : 
-                                instance.getLanguage().getMessage("status-disabled");
+                                instance.getLanguage().getMessage("status-enabled", null) :
+                                instance.getLanguage().getMessage("status-disabled", null);
                     }
-                    return instance.getLanguage().getMessage("claim_setting-if-no-claim");
+                    return instance.getLanguage().getMessage("claim_setting-if-no-claim", null);
                 }
                 return null;
         	}

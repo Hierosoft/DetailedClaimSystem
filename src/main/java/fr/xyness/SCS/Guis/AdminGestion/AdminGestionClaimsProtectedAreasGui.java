@@ -18,7 +18,9 @@ import fr.xyness.SCS.Types.Claim;
 import me.clip.placeholderapi.PlaceholderAPI;
 
 /**
- * Class representing the Admin Gestion Claims Protected Areas GUI.
+ * The Admin Claims Protected Areas Management GUI.
+ *
+ * L'interface utilisateur graphique de gestion des zones protégées des revendications administratives.
  */
 public class AdminGestionClaimsProtectedAreasGui implements InventoryHolder {
 
@@ -41,22 +43,23 @@ public class AdminGestionClaimsProtectedAreasGui implements InventoryHolder {
     
 
     /**
-     * Main constructor for AdminGestionClaimsProtectedAreasGui.
+     * The Admin Claims Protected Areas Management GUI constructor.
      * 
      * @param player The player who opened the GUI.
      * @param page   The current page of the GUI.
      * @param filter The filter applied to the claims.
-     * @param owner  The owner of the claims.
      * @param instance The instance of the SimpleClaimSystem plugin.
      */
     public AdminGestionClaimsProtectedAreasGui(Player player, int page, String filter, SimpleClaimSystem instance) {
     	this.instance = instance;
+        // TODO: translate this string
+        // zone: null since this is a list of claims (See Chunk/Zone list for zones)
         inv = Bukkit.createInventory(this, 54, "§4[A]§r Protected areas (Page "+String.valueOf(page)+")");
         loadItems(player, page, filter).thenAccept(success -> {
         	if (success) {
         		instance.executeEntitySync(player, () -> player.openInventory(inv));
         	} else {
-        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         	}
         })
         .exceptionally(ex -> {
@@ -80,14 +83,14 @@ public class AdminGestionClaimsProtectedAreasGui implements InventoryHolder {
      * @return A CompletableFuture with a boolean to check if the gui is correctly initialized.
      */
     private CompletableFuture<Boolean> loadItems(Player player, int page, String filter) {
-    	
     	return CompletableFuture.supplyAsync(() -> {
-    	
 	        CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
 	        cPlayer.setFilter(filter);
 	        cPlayer.clearMapClaim();
 	        cPlayer.clearMapLoc();
 	        cPlayer.setGuiPage(page);
+            cPlayer.clearGuiZone();
+            // zone: null since we are in the list of claims (admin-protected areas in this case)
 	        inv.setItem(48, backPage(page - 1,!(page > 1)));
 	        
 	        Set<Claim> claims = getClaims(filter, "*");
@@ -209,7 +212,7 @@ public class AdminGestionClaimsProtectedAreasGui implements InventoryHolder {
                 .replace("%location%", instance.getMain().getClaimCoords(claim))
 	    		.replace("%sale-status%", claim.getSale() ? (instance.getLanguage().getMessage("claim-info-lore-sale-status-true")
 					.replace("%price%", instance.getMain().getNumberSeparate(String.valueOf(claim.getPrice())))
-					.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))) : instance.getLanguage().getMessage("claim-info-lore-sale-status-false"));
+					.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))) : instance.getLanguage().getMessage("claim-info-lore-sale-status-false"));
             if (line.contains("%members%")) {
                 lore.addAll(Arrays.asList(getMembers(claim).split("\n")));
             } else if (line.contains("%bans%")) {

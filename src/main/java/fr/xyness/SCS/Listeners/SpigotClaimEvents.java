@@ -4,8 +4,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import fr.xyness.SCS.Zone;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.WeatherType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,6 +16,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import fr.xyness.SCS.SimpleClaimSystem;
@@ -67,7 +70,7 @@ public class SpigotClaimEvents implements Listener {
 		if(cPlayer == null) return;
 		if(cPlayer.getClaimChat()) {
 			event.setCancelled(true);
-			String msg = instance.getLanguage().getMessage("chat-format").replace("%player%",playerName).replace("%message%", event.getMessage());
+			String msg = instance.getLanguage().getMessage("chat-format", null).replace("%player%",playerName).replace("%message%", event.getMessage());
 			player.sendMessage(msg);
 			for(String p : instance.getMain().getAllMembersWithPlayerParallel(playerName)) {
 				Player target = Bukkit.getPlayer(p);
@@ -84,20 +87,24 @@ public class SpigotClaimEvents implements Listener {
      */
     @EventHandler
     public void onPlayerPickupItem(PlayerPickupItemEvent event) {
-    	Chunk chunk = event.getItem().getLocation().getChunk();
+        Location itemLocation = event.getItem().getLocation();
+    	Chunk chunk = itemLocation.getChunk();
     	Player player = event.getPlayer();
     	WorldMode mode = instance.getSettings().getWorldMode(player.getWorld().getName());
     	if(instance.getPlayerMain().checkPermPlayer(player, "scs.bypass")) return;
 		if(instance.getMain().checkIfClaimExists(chunk)) {
 			Claim claim = instance.getMain().getClaim(chunk);
-			if(!claim.getPermissionForPlayer("ItemsPickup", player)) {
+            Zone zone = (claim != null) ? claim.getZoneAt(itemLocation): null;
+            Claim permissionScope = claim;
+            if (zone != null) permissionScope = zone;
+			if(!permissionScope.getPermissionForPlayer("ItemsPickup", player)) {
 				event.setCancelled(true);
-				instance.getMain().sendMessage(player,instance.getLanguage().getMessage("itemspickup"), instance.getSettings().getSetting("protection-message"));
+				instance.getMain().sendMessage(player,instance.getLanguage().getMessage("itemspickup", zone), instance.getSettings().getSetting("protection-message"));
 				return;
 			}
 		} else if (mode == WorldMode.SURVIVAL_REQUIRING_CLAIMS && !instance.getSettings().getSettingSRC("ItemsPickup")) {
         	event.setCancelled(true);
-        	instance.getMain().sendMessage(player,instance.getLanguage().getMessage("itemspickup-mode"), instance.getSettings().getSetting("protection-message"));
+        	instance.getMain().sendMessage(player,instance.getLanguage().getMessage("itemspickup-mode", null), instance.getSettings().getSetting("protection-message"));
         }
     }
     
@@ -192,7 +199,7 @@ public class SpigotClaimEvents implements Listener {
      *
      * @param event   The player teleport event.
      * @param player  The player.
-     * @param toChunk The destination chunk.
+     * @param claim The destination claim.
      * @return True if the teleport is blocked, false otherwise.
      */
     private boolean isTeleportBlocked(PlayerTeleportEvent event, Player player, Claim claim) {
@@ -212,7 +219,8 @@ public class SpigotClaimEvents implements Listener {
      * Handles weather settings for the player.
      *
      * @param player The player.
-     * @param chunk  The chunk.
+     * @param to  Current chunk.
+     * @param from  Previous chunk.
      */
     private void handleWeatherSettings(Player player, Chunk to, Chunk from) {
     	Claim claimTo = instance.getMain().getClaim(to);
@@ -355,11 +363,11 @@ public class SpigotClaimEvents implements Listener {
                             double balance = instance.getVault().getPlayerBalance(playerName);
 
                             if (balance < price[0]) {
-                            	instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price[0] - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))));
+                            	instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price[0] - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))));
                                 return;
                             }
                             instance.getVault().removePlayerBalance(playerName, price[0]);
-                            if (price[0] > 0) instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("you-paid-chunk").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price[0] * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))));
+                            if (price[0] > 0) instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("you-paid-chunk").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price[0] * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))));
                         }
                         instance.getMain().addClaimChunk(claim, chunk)
                         	.thenAccept(success -> {
@@ -370,7 +378,7 @@ public class SpigotClaimEvents implements Listener {
                         			if (instance.getSettings().getBooleanSetting("claim-particles")) instance.getMain().displayChunks(player, new CustomSet<>(claim.getChunks()), true, false);
                         			return;
                         		} else {
-                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+                        			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
                         		}
                         	})
                             .exceptionally(ex -> {
@@ -417,7 +425,7 @@ public class SpigotClaimEvents implements Listener {
             			if (success) {
             				player.sendMessage(instance.getLanguage().getMessage("delete-claim-protected-area"));
             			} else {
-            				player.sendMessage(instance.getLanguage().getMessage("error"));
+            				player.sendMessage(instance.getLanguage().getMessage("error", null));
             			}
             		})
                     .exceptionally(ex -> {
@@ -437,7 +445,7 @@ public class SpigotClaimEvents implements Listener {
             		if (success) {
             			player.sendMessage(instance.getLanguage().getMessage("territory-delete-success"));
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("error"));
+            			player.sendMessage(instance.getLanguage().getMessage("error", null));
             		}
             	})
                 .exceptionally(ex -> {
@@ -485,12 +493,12 @@ public class SpigotClaimEvents implements Listener {
                 double balance = instance.getVault().getPlayerBalance(playerName);
 
                 if (balance < price) {
-                	player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol")));
+                	player.sendMessage(instance.getLanguage().getMessage("buy-but-not-enough-money-claim").replace("%missing-price%", instance.getMain().getPrice(String.valueOf((double) Math.round((price - balance)*100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null)));
                     return;
                 }
 
                 instance.getVault().removePlayerBalance(playerName, price);
-                if (price > 0) player.sendMessage(instance.getLanguage().getMessage("you-paid-claim").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol")));
+                if (price > 0) player.sendMessage(instance.getLanguage().getMessage("you-paid-claim").replace("%price%", instance.getMain().getPrice(String.valueOf((double) Math.round(price * 100.0)/100.0))).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null)));
             }
             
             // Create claim
@@ -501,7 +509,7 @@ public class SpigotClaimEvents implements Listener {
             			player.sendMessage(instance.getLanguage().getMessage("create-claim-success").replace("%remaining-claims%", instance.getMain().getNumberSeparate(String.valueOf(remainingClaims))));
             			if (instance.getSettings().getBooleanSetting("claim-particles")) instance.getMain().displayChunks(player, new CustomSet<>(Set.of(chunk)), true, false);
             		} else {
-            			player.sendMessage(instance.getLanguage().getMessage("error"));
+            			player.sendMessage(instance.getLanguage().getMessage("error", null));
             		}
             	})
                 .exceptionally(ex -> {
@@ -571,13 +579,13 @@ public class SpigotClaimEvents implements Listener {
                         ? instance.getLanguage().getMessage("enter-protected-area-for-sale-chat")
                         		.replace("%name%", toName)
                         		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                        		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
+                        		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
                         : instance.getLanguage().getMessage("enter-territory-for-sale-chat")
                           .replace("%owner%", ownerTO)
                           .replace("%player%", playerName)
                           .replace("%name%", toName)
                   		  .replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                  		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
                 message = ownerTO.equals("*")
                         ? instance.getLanguage().getMessage("enter-protected-area-chat").replace("%name%", toName)
@@ -625,13 +633,13 @@ public class SpigotClaimEvents implements Listener {
                     ? instance.getLanguage().getMessage("enter-protected-area-for-sale")
                     		.replace("%name%", toName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                    		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
+                    		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
                     : instance.getLanguage().getMessage("enter-territory-for-sale")
                       .replace("%owner%", ownerTO)
                       .replace("%player%", playerName)
                       .replace("%name%", toName)
               		  .replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-              		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+              		  .replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
         		message = ownerTO.equals("*")
                         ? instance.getLanguage().getMessage("enter-protected-area").replace("%name%", toName)
@@ -679,25 +687,25 @@ public class SpigotClaimEvents implements Listener {
             	        .replace("%owner%", ownerTO)
             	        .replace("%player%", playerName)
                 		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
+                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
             			: instance.getLanguage().getMessage("enter-territory-for-sale-title")
                 	        .replace("%name%", toName)
                 	        .replace("%owner%", ownerTO)
                 	        .replace("%player%", playerName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
             	toSubtitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-for-sale-subtitle")
             	        .replace("%name%", toName)
             	        .replace("%owner%", ownerTO)
             	        .replace("%player%", playerName)
                 		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))
+                  		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))
             	        : instance.getLanguage().getMessage("enter-territory-for-sale-subtitle")
                 	        .replace("%name%", toName)
                 	        .replace("%owner%", ownerTO)
                 	        .replace("%player%", playerName)
                     		.replace("%price%", instance.getMain().getPrice(String.valueOf(claim.getPrice())))
-                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"));
+                      		.replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null));
         	} else {
             	toTitleKey = ownerTO.equals("*") ? instance.getLanguage().getMessage("enter-protected-area-title")
             	        .replace("%name%", toName)

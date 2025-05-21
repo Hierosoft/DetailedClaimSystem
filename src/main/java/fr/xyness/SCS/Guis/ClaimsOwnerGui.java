@@ -17,7 +17,7 @@ import fr.xyness.SCS.Types.GuiSettings;
 import fr.xyness.SCS.Types.GuiSlot;
 
 /**
- * Class representing the Claims Owner GUI.
+ * Claims Owner GUI.
  */
 public class ClaimsOwnerGui implements InventoryHolder {
 
@@ -54,9 +54,10 @@ public class ClaimsOwnerGui implements InventoryHolder {
     public ClaimsOwnerGui(Player player, int page, String filter, String owner, SimpleClaimSystem instance) {
     	this.instance = instance;
     	this.player = player;
-    	
+
+		// zone: null since zones have members, claims have owners/members
     	// Get title
-    	GuiSettings guiSettings = ClaimGuis.gui_settings.get("claims_owner");
+    	GuiSettings guiSettings = ClaimGuis.getGuiSettings("claims_owner", null);
     	String title = guiSettings.getTitle()
     			.replace("%page%", String.valueOf(page))
     			.replace("%owner%", owner);
@@ -69,7 +70,7 @@ public class ClaimsOwnerGui implements InventoryHolder {
         	if (success) {
         		instance.executeEntitySync(player, () -> player.openInventory(inv));
         	} else {
-        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        		instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         	}
         })
         .exceptionally(ex -> {
@@ -89,7 +90,8 @@ public class ClaimsOwnerGui implements InventoryHolder {
     private CompletableFuture<Boolean> loadItems(int page, String filter, String owner) {
     	
     	return CompletableFuture.supplyAsync(() -> {
-    	
+			// zone: null since zones have members, claims have owners/members
+
 	    	// Get player data
 	        CPlayer cPlayer = instance.getPlayerMain().getCPlayer(player.getUniqueId());
 	        Set<Claim> claims = getClaims(filter, owner);
@@ -104,13 +106,14 @@ public class ClaimsOwnerGui implements InventoryHolder {
 	        cPlayer.clearMapClaim();
 	        cPlayer.clearMapLoc();
 	        cPlayer.setGuiPage(page);
+			cPlayer.clearGuiZone();
 	        
 	        // Set bottom items
-    		GuiSettings guiSettings = ClaimGuis.gui_settings.get("claims_owner");
+    		GuiSettings guiSettings = ClaimGuis.getGuiSettings("claims_owner", null);
 	        int max = guiSettings.getEndSlot() - guiSettings.getStartSlot();
 	        
 	        // Items
-    		List<GuiSlot> slots = new ArrayList<>(ClaimGuis.gui_slots.get("claims_owner"));
+    		List<GuiSlot> slots = new ArrayList<>(ClaimGuis.getGuiSlots(null).get("claims_owner"));
     		for(GuiSlot slot : slots) {
     			int slot_int = slot.getSlot();
     			String key = slot.getKey();
@@ -131,8 +134,8 @@ public class ClaimsOwnerGui implements InventoryHolder {
     			}
     			if (key.equals("Filter")) {
     	            lore_string = lore_string
-    	                    .replaceAll("%status_color_" + getStatusIndex(filter) + "%", instance.getLanguage().getMessage("status_color_active_filter"))
-    	                    .replaceAll("%status_color_[^" + getStatusIndex(filter) + "]%", instance.getLanguage().getMessage("status_color_inactive_filter"));
+    	                    .replaceAll("%status_color_" + getStatusIndex(filter) + "%", instance.getLanguage().getMessage("status_color_active_filter", null))
+    	                    .replaceAll("%status_color_[^" + getStatusIndex(filter) + "]%", instance.getLanguage().getMessage("status_color_inactive_filter", null));
     			}
     			List<String> lore = instance.getGuis().getLore(lore_string);
     			if(title.isBlank()) title = null;
@@ -152,7 +155,7 @@ public class ClaimsOwnerGui implements InventoryHolder {
     		}
 	
 	        // Prepare lore
-	        List<String> loreTemplate = instance.getGuis().getLore(instance.getLanguage().getMessage("access-all-claim-lore"));
+	        List<String> loreTemplate = instance.getGuis().getLore(instance.getLanguage().getMessage("access-all-claim-lore", null));
 	        
 	        // Prepare count
 	        int startItem = (page - 1) * max;
@@ -173,7 +176,7 @@ public class ClaimsOwnerGui implements InventoryHolder {
 	            
 	            // Prepare lore and title for claim
 	            List<String> lore = prepareLore(loreTemplate, claim, player);
-	            String title = instance.getLanguage().getMessage("access-all-claim-title")
+	            String title = instance.getLanguage().getMessage("access-all-claim-title", null)
 	                    .replace("%owner%", owner)
 	                    .replace("%name%", claim.getName())
 	                    .replace("%coords%", instance.getMain().getClaimCoords(claim));
@@ -246,11 +249,11 @@ public class ClaimsOwnerGui implements InventoryHolder {
      */
     private void addEconomyLore(Player player, Claim claim, List<String> lore) {
         if (instance.getSettings().getBooleanSetting("economy") && claim.getSale()) {
-            Collections.addAll(lore, instance.getLanguage().getMessage("all-claim-buyable-price")
+            Collections.addAll(lore, instance.getLanguage().getMessage("all-claim-buyable-price", null)
                 .replace("%price%", instance.getMain().getNumberSeparate(String.valueOf(claim.getPrice())))
-                .replace("%money-symbol%",instance.getLanguage().getMessage("money-symbol"))
+                .replace("%money-symbol%",instance.getLanguage().getMessage("money-symbol", null))
                 .split("\n"));
-            lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.buy") ? instance.getLanguage().getMessage("all-claim-is-buyable") : instance.getLanguage().getMessage("gui-button-no-permission") + instance.getLanguage().getMessage("to-buy"));
+            lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.buy") ? instance.getLanguage().getMessage("all-claim-is-buyable", null) : instance.getLanguage().getMessage("gui-button-no-permission", null) + instance.getLanguage().getMessage("to-buy", null));
         }
     }
 
@@ -263,9 +266,9 @@ public class ClaimsOwnerGui implements InventoryHolder {
      */
     private void addVisitorLore(Claim claim, List<String> lore, Player player) {
         String visitorMessage = claim.getPermissionForPlayer("GuiTeleport",player) || claim.getOwner().equals(player.getName()) || instance.getPlayerMain().checkPermPlayer(player, "scs.bypass.guiteleport") ? 
-            instance.getLanguage().getMessage("access-all-claim-lore-allow-visitors") : 
-            instance.getLanguage().getMessage("access-all-claim-lore-deny-visitors");
-        lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.tp") ? visitorMessage : instance.getLanguage().getMessage("gui-button-no-permission") + instance.getLanguage().getMessage("to-teleport"));
+            instance.getLanguage().getMessage("access-all-claim-lore-allow-visitors", null) :
+            instance.getLanguage().getMessage("access-all-claim-lore-deny-visitors", null);
+        lore.add(instance.getPlayerMain().checkPermPlayer(player, "scs.command.claim.tp") ? visitorMessage : instance.getLanguage().getMessage("gui-button-no-permission", null) + instance.getLanguage().getMessage("to-teleport", null));
     }
 
     /**
@@ -292,7 +295,7 @@ public class ClaimsOwnerGui implements InventoryHolder {
     public String getMembers(Claim claim) {
         Set<String> members = instance.getMain().convertUUIDSetToStringSet(claim.getMembers());
         if (members.isEmpty()) {
-            return instance.getLanguage().getMessage("claim-list-no-member");
+            return instance.getLanguage().getMessage("claim-list-no-member", null);
         }
         StringBuilder membersList = new StringBuilder();
         int i = 0;

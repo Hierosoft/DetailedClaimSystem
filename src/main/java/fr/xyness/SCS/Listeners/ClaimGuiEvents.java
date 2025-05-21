@@ -2,6 +2,7 @@ package fr.xyness.SCS.Listeners;
 
 import java.util.List;
 
+import fr.xyness.SCS.Zone;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -45,7 +46,7 @@ import fr.xyness.SCS.Types.GuiSettings;
 import fr.xyness.SCS.Types.GuiSlot;
 
 /**
- * Event listener for claim guis events.
+ * Event listener for claim events from claim GUIs.
  */
 public class ClaimGuiEvents implements Listener {
 	
@@ -57,8 +58,7 @@ public class ClaimGuiEvents implements Listener {
 	
     /** Instance of SimpleClaimSystem */
     private SimpleClaimSystem instance;
-    
-    
+
     // ******************
     // *  Constructors  *
     // ******************
@@ -416,6 +416,7 @@ public class ClaimGuiEvents implements Listener {
         int clickedSlot = event.getSlot();
         
         Claim claim = cPlayer.getClaim();
+		Zone zone = cPlayer.popGuiZone();  // pop to prevent assuming same Zone in later clicks
         String role = cPlayer.getFilter();
         if(claim == null || role == null) return;
         
@@ -434,15 +435,15 @@ public class ClaimGuiEvents implements Listener {
                     new ClaimSettingsGui(player,claim,instance,role);
                     return;
         		case "Apply":
-                	instance.getMain().applyAllSettings(claim)
+                	instance.getMain().applyAllSettings(claim, zone)
             		.thenAccept(success -> {
             			if (success) {
             				instance.executeEntitySync(player, () -> {
                 				player.closeInventory();
-                				player.sendMessage(instance.getLanguage().getMessage("apply-all-settings-success"));
+                				player.sendMessage(instance.getLanguage().getMessage("apply-all-settings-success", zone));
             				});
             			} else {
-            				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+            				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
             			}
             		})
                     .exceptionally(ex -> {
@@ -493,10 +494,11 @@ public class ClaimGuiEvents implements Listener {
             	String title = meta.getDisplayName();
                 List<String> lore = meta.getLore();
                 String check = lore.get(lore.size()-1);
-                if(check.equals(instance.getLanguage().getMessage("choice-setting-disabled"))) return;
+                if(check.equals(instance.getLanguage().getMessage("choice-setting-disabled", zone))) return;
                 String action = instance.getGuis().getSlotPerm(clickedSlot,role);
                 if(!instance.getPlayerMain().checkPermPlayer(player, "scs.setting."+action) && !instance.getPlayerMain().checkPermPlayer(player, "scs.setting.*")) return;
-                if(title.contains(instance.getLanguage().getMessage("status-enabled"))){
+				// zone: null for status-enabled since it is a generic message
+                if(title.contains(instance.getLanguage().getMessage("status-enabled", null))){
                 	instance.getMain().updatePerm(claim, action, false, role)
                 		.thenAccept(success -> {
                 			if (success) {
@@ -506,7 +508,7 @@ public class ClaimGuiEvents implements Listener {
                             	meta.setLore(lore);
                             	clickedItem.setItemMeta(meta);
                 			} else {
-                				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+                				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
                 			}
                 		})
                         .exceptionally(ex -> {
@@ -524,7 +526,7 @@ public class ClaimGuiEvents implements Listener {
                         	meta.setLore(lore);
                         	clickedItem.setItemMeta(meta);
                 		} else {
-                			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+                			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
                 		}
                 	})
                     .exceptionally(ex -> {
@@ -620,7 +622,7 @@ public class ClaimGuiEvents implements Listener {
                         	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("remove-claim-player").replace("%claim-name%", claim.getName()).replace("%owner%", playerName)));
                         }
         			} else {
-        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         			}
         		})
                 .exceptionally(ex -> {
@@ -708,7 +710,7 @@ public class ClaimGuiEvents implements Listener {
 	    	            int page = cPlayer.getGuiPage();
 	    	        	new ClaimChunksGui(player,claim,page,instance);
 	    			} else {
-	    				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+	    				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
 	    			}
 	    		})
 	            .exceptionally(ex -> {
@@ -802,7 +804,7 @@ public class ClaimGuiEvents implements Listener {
         		        	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("unbanned-claim-player").replace("%owner%", playerName).replace("%claim-name%", claim.getName())));
         		        }
         			} else {
-        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         			}
         		})
                 .exceptionally(ex -> {
@@ -883,7 +885,7 @@ public class ClaimGuiEvents implements Listener {
                         	int page = cPlayer.getGuiPage();
                             new ClaimListGui(player,page,cPlayer.getFilter(),instance);
             			} else {
-            				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+            				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
             			}
             		})
                     .exceptionally(ex -> {
@@ -1048,17 +1050,17 @@ public class ClaimGuiEvents implements Listener {
             				.thenAccept(success -> {
             					if (success) {
             						instance.executeEntitySync(player, () -> {
-    	            	                player.sendMessage(instance.getLanguage().getMessage("buy-claim-success").replace("%name%", old_name).replace("%price%", String.valueOf(price)).replace("%owner%", old_owner.equalsIgnoreCase("*") ? "protected areas" : old_owner).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol")));
+    	            	                player.sendMessage(instance.getLanguage().getMessage("buy-claim-success").replace("%name%", old_name).replace("%price%", String.valueOf(price)).replace("%owner%", old_owner.equalsIgnoreCase("*") ? "protected areas" : old_owner).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null)));
     	            	                player.closeInventory();
             						});
 	            	                if(!old_owner.equalsIgnoreCase("*")) {
 	                	                Player target = Bukkit.getPlayer(old_owner);
 	                	                if(target != null && target.isOnline()) {
-	                	                	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("claim-was-sold").replace("%name%", old_name).replace("%buyer%", playerName).replace("%price%", String.valueOf(price)).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol"))));
+	                	                	instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("claim-was-sold").replace("%name%", old_name).replace("%buyer%", playerName).replace("%price%", String.valueOf(price)).replace("%money-symbol%", instance.getLanguage().getMessage("money-symbol", null))));
 	                	                }
 	            	                }
             					} else {
-            						instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+            						instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
             					}
             				})
                             .exceptionally(ex -> {
@@ -1078,7 +1080,9 @@ public class ClaimGuiEvents implements Listener {
     }
     
 	/**
-     * Handles admin gestion main claim GUI click events.
+     * Handles admin management main claim GUI click events.
+	 *
+	 * Gère les événements de clic de l'interface graphique principale de gestion de l'administrateur.
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1112,7 +1116,9 @@ public class ClaimGuiEvents implements Listener {
     }
     
     /**
-     * Handles admin gestion claims GUI click events.
+     * Handles admin management claims GUI click events.
+	 *
+	 * Gère les événements de clic de l'interface utilisateur graphique des réclamations de gestion administrative.
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1169,7 +1175,7 @@ public class ClaimGuiEvents implements Listener {
 	        					instance.executeEntitySync(pTarget, () -> pTarget.sendMessage(instance.getLanguage().getMessage("player-all-claim-unclaimed-by-admin").replace("%player%", player.getName())));
 	        				}
 	    				} else {
-	    					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+	    					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
 	    				}
 	    			})
 	    			.exceptionally(ex -> {
@@ -1188,7 +1194,9 @@ public class ClaimGuiEvents implements Listener {
     }
 
     /**
-     * Handles admin gestion claims owner GUI click events.
+     * Handles admin management claims owner GUI click events.
+	 *
+	 * Gère les événements de clic de l'interface utilisateur graphique du propriétaire des réclamations de gestion administrative.
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1237,15 +1245,16 @@ public class ClaimGuiEvents implements Listener {
         		String claim_name = claim.getName();
         		instance.getMain().deleteClaim(claim)
 				.thenAccept(success -> {
+					// zone: null since unclaim is not for Zone (See delete Chunk/Zone instead)
 					if (success) {
-						instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("player-unclaim-other-claim-aclaim").replace("%name%", claim_name).replace("%player%", owner)));
+						instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("player-unclaim-other-claim-aclaim", null).replace("%name%", claim_name).replace("%player%", owner)));
         				Player target = Bukkit.getPlayer(owner);
         				if(target != null) {
-        					instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("player-claim-unclaimed-by-admin").replace("%name%", claim_name).replace("%player%", player.getName())));
+        					instance.executeEntitySync(target, () -> target.sendMessage(instance.getLanguage().getMessage("player-claim-unclaimed-by-admin", null).replace("%name%", claim_name).replace("%player%", player.getName())));
         				}
         				new AdminGestionClaimsOwnerGui(player,cPlayer.getGuiPage(),cPlayer.getFilter(),owner,instance);
 					} else {
-						instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+						instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
 					}
 				})
 		        .exceptionally(ex -> {
@@ -1259,7 +1268,9 @@ public class ClaimGuiEvents implements Listener {
     }
     
 	/**
-     * Handles admin gestion claim GUI click events.
+     * Handles admin management claim GUI click events.
+	 *
+	 * Gère les événements de clic de l'interface graphique utilisateur de gestion administrative.
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1291,7 +1302,7 @@ public class ClaimGuiEvents implements Listener {
                     	}
                     	new AdminGestionClaimsOwnerGui(player,1,cPlayer.getFilter(),target, instance);
         			} else {
-        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         			}
         		})
                 .exceptionally(ex -> {
@@ -1332,7 +1343,7 @@ public class ClaimGuiEvents implements Listener {
                             	meta.setLore(lore);
                             	clickedItem.setItemMeta(meta);
                 			} else {
-                				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+                				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
                 			}
                 		})
                         .exceptionally(ex -> {
@@ -1350,7 +1361,7 @@ public class ClaimGuiEvents implements Listener {
                         	meta.setLore(lore);
                         	clickedItem.setItemMeta(meta);
                 		} else {
-                			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+                			instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
                 		}
                 	})
                     .exceptionally(ex -> {
@@ -1364,7 +1375,9 @@ public class ClaimGuiEvents implements Listener {
     }
     
     /**
-     * Handles admin gestion claim members GUI click events.
+     * Handles admin management claim members GUI click events.
+	 *
+	 * Gère les événements de clic de l'interface utilisateur graphique des membres de la gestion administrative.
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1415,7 +1428,7 @@ public class ClaimGuiEvents implements Listener {
             				instance.executeEntitySync(target, () -> target.sendMessage(targetMessage));
             			}
     				} else {
-    					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+    					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
     				}
     			})
                 .exceptionally(ex -> {
@@ -1428,7 +1441,9 @@ public class ClaimGuiEvents implements Listener {
     }
     
     /**
-     * Handles admin gestion claim bans GUI click events.
+     * Handles admin management claim bans GUI click events.
+	 *
+	 * Gère les interdictions de réclamation de gestion administrative et les événements de clic de l'interface graphique.
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1479,7 +1494,7 @@ public class ClaimGuiEvents implements Listener {
             				instance.executeEntitySync(target, () -> target.sendMessage(targetMessage));
             			}
     				} else {
-    					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+    					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
     				}
     			})
                 .exceptionally(ex -> {
@@ -1492,7 +1507,9 @@ public class ClaimGuiEvents implements Listener {
     }
     
     /**
-     * Handles admin gestion claims protected areas GUI click events.
+     * Handles admin management claims protected areas GUI click events.
+	 *
+	 * Gère les événements de clic de l'interface utilisateur graphique des zones protégées des réclamations de gestion administrative.
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1543,7 +1560,7 @@ public class ClaimGuiEvents implements Listener {
         					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("delete-claim-protected-area")));
         					new AdminGestionClaimsProtectedAreasGui(player,cPlayer.getGuiPage(),cPlayer.getFilter(),instance);
         				} else {
-        					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        					instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         				}
         			})
         	        .exceptionally(ex -> {
@@ -1557,7 +1574,9 @@ public class ClaimGuiEvents implements Listener {
     }
     
 	/**
-     * Handles admin gestion claim main GUI click events.
+     * Handles admin management claim main GUI click events (to go to other panels).
+	 *
+	 * Gère les événements de clic de l'interface utilisateur principale de la gestion de l'administrateur (pour accéder à d'autres panneaux).
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1621,7 +1640,9 @@ public class ClaimGuiEvents implements Listener {
     }
     
     /**
-     * Handles admin gestion claim chunks GUI click events.
+     * Handles admin management claim chunks GUI click events.
+	 *
+	 * Gère les événements de clic de l'interface utilisateur graphique des blocs de réclamation de gestion administrative.
      * @param event the inventory click event.
      * @param player the player clicking in the inventory.
      * @param cPlayer the CPlayer object for the player.
@@ -1663,7 +1684,7 @@ public class ClaimGuiEvents implements Listener {
         	            int page = cPlayer.getGuiPage();
         	        	new AdminGestionClaimChunksGui(player,claim,page,instance);
         			} else {
-        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error")));
+        				instance.executeEntitySync(player, () -> player.sendMessage(instance.getLanguage().getMessage("error", null)));
         			}
         		})
                 .exceptionally(ex -> {
